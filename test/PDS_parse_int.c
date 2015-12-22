@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "test.h"
 
 #include <pds.h>
 #define PDS_IMPL
@@ -14,8 +12,6 @@ typedef struct
     int         status;
 } test_value_t;
 
-#define check(e) if(!(e)) { fprintf(stderr, "%s+%d: test failed \"%s\"\n", __FILE__, __LINE__, #e); return EXIT_FAILURE; }
-
 int main()
 {
     test_value_t tv[] = 
@@ -25,7 +21,8 @@ int main()
         {      "8#foo#", 2,         0, PDS_INVALID_VALUE },  
         {     "10#-9a#", 5, INT32_MAX, PDS_INVALID_VALUE },  
         {      "16#ffc", 6, INT32_MAX, PDS_INVALID_VALUE },  
-        {         "4##", 2,         0, PDS_INVALID_VALUE },  
+        {         "4##", 2,         0, PDS_INVALID_VALUE },
+        {             0, 0,         0, 0 }
     };
 
     int32_t value;
@@ -34,7 +31,7 @@ int main()
     const char *end;
     int status; 
     int i;
-    for(i=0; i<6; i++)
+    for(i=0; 0!=tv[i].str; i++)
     {
         first  = tv[i].str;
         last   = tv[i].str + strlen(tv[i].str) - 1;

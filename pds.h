@@ -171,9 +171,29 @@ int32_t PDS_parse_int(const char* first, const char* last, const char** end, int
 double PDS_parse_real(const char *first, const char *last, const char **end, int *status);
 
 /**
- * [todo]
+ * Parse unit string.
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid 
+ *                  character of the input string.
+ * @param [in][out] status Status variable set to PDS_OK if the string contains
+ *                         a valid unit or PDS_INVALID_VALUE [todo]
+ * @return @see PDS_UNITS.
  */
 int PDS_parse_unit(const char *first, const char *last, const char **end, int *status);
+
+/**
+ * Parse identifier. 
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid 
+ *                  character of the input string.
+ * @param [in][out] status Status variable set to PDS_OK if the string contains
+ *                         a valid unit or PDS_INVALID_VALUE.
+ * @return Pointer to the beginning of the indetifier or 0 if the string is invalid.
+ * @todo Instead of a pointer, return a id_type(id, namespace, none)
+ */
+const char* PDS_parse_identifier(const char *first, const char *last, const char **end, int *status);
 
 /* [todo]
  * struct value
@@ -184,10 +204,14 @@ int PDS_parse_unit(const char *first, const char *last, const char **end, int *s
  * }
  */
 /* [todo] parse string */
-/* [todo] parse list */
-/* [todo] parse record */
+/* [todo] parse literal */
 /* [todo] parse date */
-
+/* [todo] parse sequence */
+/* [todo] parse set */
+/* [todo] parse assignement */
+/* [todo] parse pointer */
+/* [todo] parse object */
+/* [todo] parse group */
 #endif /* PDS_H */
 
 #ifdef PDS_IMPL
@@ -206,6 +230,8 @@ int PDS_parse_unit(const char *first, const char *last, const char **end, int *s
 #define PDS_isupper(c) (((c) >= 'A') && ((c) <= 'Z'))
 
 #define PDS_isalpha(c) (PDS_islower(c) || PDS_isupper(c))
+
+#define PDS_isalnum(c) (PDS_isalpha(c) || PDS_isdigit(c))
 
 /**
  * Remove leading and trailing white spaces in a string.
@@ -500,7 +526,7 @@ double PDS_parse_real(const char *first, const char *last, const char **end, int
 }
 
 /*
- * Parse 
+ * Parse unit. 
  */
 int PDS_parse_unit(const char *first, const char *last, const char **end, int *status)
 {
@@ -581,7 +607,7 @@ int PDS_parse_unit(const char *first, const char *last, const char **end, int *s
     int j;
     int len;
     const char *ptr = first;
-    if(('<' == *first) && ('>' == *last))
+    if((PDS_OK == *status) && ('<' == *first) && ('>' == *last))
     {
         ++ptr;
         len = last-ptr;
@@ -600,6 +626,60 @@ int PDS_parse_unit(const char *first, const char *last, const char **end, int *s
     *end = first;
     *status = PDS_INVALID_VALUE;
     return PDS_UNIT_UNKNOWN;    
+}
+
+/*
+ * Parse identifier. 
+ */
+const char* PDS_parse_identifier(const char *first, const char *last, const char **end, int *status)
+{
+	const char *ptr;
+	char c, previous;
+	
+	if(PDS_OK != *status)
+	{
+		*end = first;
+		return 0;
+	}
+	
+	ptr = first;	
+	/* First character must be alphanumeric. */
+	// [todo] POINTER
+	previous = c = *ptr++;
+	if(!PDS_isalnum(c))
+	{
+		*end    = first;
+		*status = PDS_INVALID_VALUE;
+		return 0;
+	}
+	
+	/* Then follows alphanumeric or '_'. */
+	for(; (ptr<=last) && (PDS_OK == *status); )
+	{
+		previous = c;
+		c = *ptr++;
+		
+		if('_' == c)
+		{
+			if(!PDS_isalnum(previous))
+			{
+				*status = PDS_INVALID_VALUE;
+			}
+		}
+		else if(!PDS_isalnum(c))
+		{
+				break;
+		}
+	}
+	/* The last valid character must be alphanumeric. */
+	if((PDS_OK == *status) && PDS_isalnum(previous) && ('_' != c))
+	{
+		*end = ptr;
+		return first;
+	}
+	*end    = first;
+	*status = PDS_INVALID_VALUE;
+	return 0;
 }
 
 #endif /* PDS_IMPL */
