@@ -191,7 +191,6 @@ int PDS_parse_unit(const char *first, const char *last, const char **end, int *s
  * @param [in][out] status Status variable set to PDS_OK if the string contains
  *                         a valid unit or PDS_INVALID_VALUE.
  * @return Pointer to the beginning of the indetifier or 0 if the string is invalid.
- * @todo Instead of a pointer, return a id_type(id, namespace, none)
  */
 const char* PDS_parse_identifier(const char *first, const char *last, const char **end, int *status);
 
@@ -644,7 +643,6 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 	
 	ptr = first;	
 	/* First character must be alphanumeric. */
-	// [todo] POINTER
 	previous = c = *ptr++;
 	if(!PDS_isalnum(c))
 	{

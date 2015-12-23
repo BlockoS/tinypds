@@ -3,45 +3,48 @@
 #include <pds.h>
 #define PDS_IMPL
 #include <pds.h>
-    
+
 typedef struct
 {
-    const char *str;
-    int         base;
-    off_t       end;
-    int32_t     expected;
-    int         status;
-} test_value_t;
-
+	int     base;
+	int32_t value;
+} integer_t;
+ 
 int main()
 {
-    test_value_t tv[] = 
-    {
-        {   " \t-714@_", 10,  6,      -714, PDS_OK },
-        {        "bEeF", 16,  4,    0xbeef, PDS_OK },
-        {    "10001111",  2,  8,      0x8f, PDS_OK },
-        {    "+1339/6 ",  8,  4,        91, PDS_OK },
-        {       "dummy",  7,  0,         0, PDS_INVALID_VALUE },
-        {  "2187483650", 10, 10, INT32_MAX, PDS_INVALID_RANGE },
-        { "-3000000000", 10, 11, INT32_MIN, PDS_INVALID_RANGE },
-        {             0,  0,  0,         0, 0 }
-    };
-    int32_t value;
-    const char *first;
-    const char *last;
-    const char *end;
-    int status; 
+	static const integer_t expected[] = {
+		{ 10,      -714 },
+		{ 16,    0xbeef },
+		{  2,      0x8f },
+		{  8,        91 },
+		{  7,         0 },
+		{ 10, INT32_MAX },
+		{ 10, INT32_MIN }
+	};
+
+    begin_test_data(integer_t)
+        test_data(   " \t-714@_",  6, expected[0], PDS_OK ),
+        test_data(        "bEeF",  4, expected[1], PDS_OK ),
+        test_data(    "10001111",  8, expected[2], PDS_OK ),
+        test_data(    "+1339/6 ",  4, expected[3], PDS_OK ),
+        test_data(       "dummy",  0, expected[4], PDS_INVALID_VALUE ),
+        test_data(  "2187483650", 10, expected[5], PDS_INVALID_RANGE ),
+        test_data( "-3000000000", 11, expected[6], PDS_INVALID_RANGE ),
+    end_test_data()
+
     int i;
-    for(i=0; 0!=tv[i].str; i++)
-    {
-        first  = tv[i].str;
-        last   = tv[i].str + strlen(tv[i].str) - 1;
-        status = PDS_OK;
+    test_foreach(i)
+	{
+        const char *first = test_str(i);
+        const char *last  = first + strlen(first) - 1;
+        const char *end   = 0;
+		int status = PDS_OK;
     
-        value  = parse_int(first, last, &end, tv[i].base, &status);
-        check(tv[i].expected == value);
-        check((first+tv[i].end) == end);
-        check(tv[i].status == status);
+        int32_t value  = parse_int(first, last, &end, test_expected(i).base, &status);
+		
+		check(test_expected(i).value == value);
+        check(test_end(i) == end);
+        check(test_status(i) == status);
     }
     return EXIT_SUCCESS;
 }

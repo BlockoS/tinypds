@@ -4,48 +4,35 @@
 #define PDS_IMPL
 #include <pds.h>
     
-typedef struct
-{
-    const char *str;
-    off_t       end;
-    double      expected;
-    int         status;
-} test_value_t;
-
 int main()
 {
-    test_value_t tv[] = 
-    {
-        {     "   511-", 6,     511.0, PDS_OK },
-        {    "-71.600 ", 7,     -71.6, PDS_OK },
-        {     "+0.0004", 7,    0.0004, PDS_OK },  
-        {       "1.e3@", 4,    1000.0, PDS_OK },  
-        {    "211.32e4", 8, 2113200.0, PDS_OK },  
-        {      "-1.e-5", 6,    -1.e-5, PDS_OK },  
-        {      "-.2e-1", 6,     -0.02, PDS_OK },  
-        {      "-.01e3", 6,     -10.0, PDS_OK },  
-        {       "af.01", 0,       0.0, PDS_OK },  
-        {         "-.e", 0,       0.0, PDS_INVALID_VALUE },  
-        {     "8.-0710", 0,       0.0, PDS_INVALID_VALUE },
-        {             0, 0,       0.0, 0 }
-    };
+	begin_test_data(double)
+        test_data( "   511-", 6,     511.0, PDS_OK ),
+        test_data("-71.600 ", 7,     -71.6, PDS_OK ),
+        test_data( "+0.0004", 7,    0.0004, PDS_OK ),  
+        test_data(   "1.e3@", 4,    1000.0, PDS_OK ),  
+        test_data("211.32e4", 8, 2113200.0, PDS_OK ),  
+        test_data(  "-1.e-5", 6,    -1.e-5, PDS_OK ),  
+        test_data(  "-.2e-1", 6,     -0.02, PDS_OK ),  
+        test_data(  "-.01e3", 6,     -10.0, PDS_OK ),  
+        test_data(   "af.01", 0,       0.0, PDS_OK ),  
+        test_data(     "-.e", 0,       0.0, PDS_INVALID_VALUE ),  
+        test_data( "8.-0710", 0,       0.0, PDS_INVALID_VALUE ),
+    end_test_data()
 
-    double value;
-    const char *first;
-    const char *last;
-    const char *end;
-    int status; 
     int i;
-    for(i=0; 0!=tv[i].str; i++)
-    {
-        first  = tv[i].str;
-        last   = tv[i].str + strlen(tv[i].str) - 1;
-        status = PDS_OK;
+    test_foreach(i)
+	{
+        const char *first = test_str(i); 
+        const char *last  = first + strlen(first) - 1; 
+        const char *end   = 0; 
+        int status = PDS_OK; 
     
-        value  = PDS_parse_real(first, last, &end, &status);
-        check(tv[i].expected == value);
-        check((first+tv[i].end) == end);
-        check(tv[i].status == status);
+        double value  = PDS_parse_real(first, last, &end, &status);
+        
+		check(test_expected(i) == value);
+        check(test_end(i) == end);
+        check(test_status(i) == status);
     }
     return EXIT_SUCCESS;
 }
