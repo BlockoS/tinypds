@@ -232,6 +232,8 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 
 #define PDS_isalnum(c) (PDS_isalpha(c) || PDS_isdigit(c))
 
+#if 0
+// [todo]
 /**
  * Remove leading and trailing white spaces in a string.
  * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
@@ -241,6 +243,7 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
  * @param [out] first Index of the first non-space character in the string.
  * @param [out] last  Index of the last non-space character in the string.
  */
+// [todo] Change format : const char* trim(const char *first, const char *last, const char **end, int *status);
 static void trim(const char* str, int len, const char** first, const char** last)
 {
     int i;
@@ -257,6 +260,27 @@ static void trim(const char* str, int len, const char** first, const char** last
     {
         *first = *last = 0;
     }
+}
+#endif
+
+/**
+ * Find the first occurence of a character in a string.
+ * @param [in] first Pointer to the first character of the input string.
+ * @param [in] last  Pointer to the last character of the input string.
+ * @param [in] c     Character to search.
+ * @return A pointer to the matched character in the input string or 0 if the
+ * character is not found.
+ */
+static const char* find_first(const char *first, const char *last, char c)
+{
+	while(first<=last)
+	{
+		if(c == *first++)
+		{
+			return first-1;
+		}
+	}
+	return 0;
 }
 
 /**
@@ -679,5 +703,25 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 	*status = PDS_INVALID_VALUE;
 	return 0;
 }
+
+#if 0
+// [todo]
+const char* PDS_parse_statement(const char* first, const char* last, const char **end, int *status)
+{
+	/* Sanity check. */
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+
+	/* Search for equal sign. */
+	/* Search for end-of-line. */
+
+	/* Parse lvalue. */
+	/* Parse rvalue. */
+
+	return 0;
+}
+#endif
 
 #endif /* PDS_IMPL */
