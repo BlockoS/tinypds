@@ -232,36 +232,26 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 
 #define PDS_isalnum(c) (PDS_isalpha(c) || PDS_isdigit(c))
 
-#if 0
-// [todo]
+static const char *PDS_eol = "\r\n";
+
 /**
  * Remove leading and trailing white spaces in a string.
  * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
  * carriage return ('\r'), horizontal tab ('\t') or vertical tab ('\v').
- * @param [in]  str   Input string.
- * @param [in]  len   Input string length.
- * @param [out] first Index of the first non-space character in the string.
- * @param [out] last  Index of the last non-space character in the string.
+ * @param [in] first Pointer to the first character of the input string.
+ * @param [in] last Pointer to the last character of the input string.
+ * @param [out] begin Stores the pointer to the first non-space character.
+ * @param [out] end Stores the pointer to the last non-space character. 
  */
-// [todo] Change format : const char* trim(const char *first, const char *last, const char **end, int *status);
-static void trim(const char* str, int len, const char** first, const char** last)
+static void trim(const char *first, const char *last, const char **begin, const char **end)
 {
-    int i;
-    for(i=0; (i<len) && PDS_isspace(str[i]); ++i) 
+    for(;(first<=last) && PDS_isspace(*first); ++first) 
     {}
-    if(i<len)
-    {
-        *first = str+i;
-        for(i=len-1; (i>=0) && PDS_isspace(str[i]); --i)
-        {}
-        *last = str+i;
-    }
-    else
-    {
-        *first = *last = 0;
-    }
+    for(;(last>=first) && PDS_isspace(*last); --last)
+    {}
+	*begin = (first<=last) ? first : 0;
+	*end   = (first<=last) ? last  : 0;
 }
-#endif
 
 /**
  * Find the first occurence of a character in a string.
@@ -708,6 +698,9 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 // [todo]
 const char* PDS_parse_statement(const char* first, const char* last, const char **end, int *status)
 {
+	const char *identifier_end;
+	const char *end_of_line;
+
 	/* Sanity check. */
 	if(PDS_OK != *status)
 	{
@@ -715,7 +708,28 @@ const char* PDS_parse_statement(const char* first, const char* last, const char 
 	}
 
 	/* Search for equal sign. */
+	identifier_end = find_first(first, last, '=');
+	if(0 == identifier_end)
+	{
+		*status = PDS_MISSING_SEPARATOR;
+		*end = first;
+		return 0;
+	}
+
 	/* Search for end-of-line. */
+	end_of_line = find_first(identifier_end, last, '\r');
+	if(0 == identifier_end)
+	{
+		*status = PDS_MISSING_SEPARATOR;
+		*end = first;
+		return 0;
+	}
+	// [todo] size check
+	if('\n' != identifier_end[1])
+	{
+		// [todo]
+		return 0;
+	}
 
 	/* Parse lvalue. */
 	/* Parse rvalue. */
