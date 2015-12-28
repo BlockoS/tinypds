@@ -33,7 +33,7 @@ int main()
 		const char *begin = 0;
 		const char *end   = 0;
 
-        trim(first, last, &begin, &end);
+        PDS_trim(first, last, &begin, &end);
 		if(test_expected(i).begin < 0)
 		{
 			check(0 == begin);

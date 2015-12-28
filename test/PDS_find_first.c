@@ -28,7 +28,7 @@ int main()
         const char *last  = first + strlen(first) - 1;
         off_t index       = test_expected(i);
 
-        const char *found = find_first(first, last, tv[i].c);
+        const char *found = PDS_find_first(first, last, tv[i].c);
 		if(index < 0)
 		{
 			check(0 == found);

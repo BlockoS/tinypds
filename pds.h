@@ -9,128 +9,61 @@
 enum PDS_STATUS
 {
     PDS_OK = 0,
+	PDS_EMPTY,
     PDS_INVALID_VALUE,
-    PDS_INVALID_RANGE
+    PDS_INVALID_RANGE,
+	PDS_MISSING_SEPARATOR,
 };
+#if 0
 /**
- * Units.
+ * PDS Statement types (12.4).
  */
-enum PDS_UNITS
+enum PDS_STATEMENTS
 {
-    PDS_UNIT_UNKNOWN = 0,   /**< Unknown unit */
-    PDS_UNIT_A,             /**< Ampere (A) */
-    PDS_UNIT_A_m,           /**< Ampere per meter (A/m) */
-    PDS_UNIT_A_m2,          /**< Ampere per square meter (A/m^2) */
-    PDS_UNIT_B,             /**< Bytes (B) */
-    PDS_UNIT_Bq,            /**< Becquerel (Bq) */
-    PDS_UNIT_C,             /**< Coulomb (C) */
-    PDS_UNIT_C_Kg,          /**< Coulomb per kilogram (C/kg) */
-    PDS_UNIT_C_m2,          /**< Coulomb per square meter (C/m^2) */   
-    PDS_UNIT_C_m3,          /**< Coulomb per cubic meter (C/m^3) */   
-    PDS_UNIT_F,             /**< Farad (F) */
-    PDS_UNIT_F_m,           /**< Farad per meter (F/m) */
-    PDS_UNIT_GHz,           /**< Gigahertz (GHz) */
-    PDS_UNIT_Gy,            /**< Gray (Gy) */
-    PDS_UNIT_Gy_s,          /**< Gray per second (Gy/s) */
-    PDS_UNIT_H,             /**< Henry (H) */
-    PDS_UNIT_H_m,           /**< Henry per meter (H/m) */
-    PDS_UNIT_Hz,            /**< Hertz (Hz) */
-    PDS_UNIT_J,             /**< Joule (J) */
-    PDS_UNIT_J_KgK,         /**< Joule per kilogram kelvin (J/(kg.K)) */
-    PDS_UNIT_J_m2_s,        /**< Joule per square meter per second (J/m^2/s) */
-    PDS_UNIT_J_molK,        /**< Joule per mole kelvin (J/(mol.K)) */
-    PDS_UNIT_J_K,           /**< Joule per kelvin (J/K) */
-    PDS_UNIT_J_T,           /**< Joule per tesla (J/T) */
-    PDS_UNIT_J_Kg,          /**< Joule per kilogram (J/Kg) */
-    PDS_UNIT_J_m3,          /**< Joule per cubic meter (J/m^3) */
-    PDS_UNIT_J_mol,         /**< Joule per mole (J/mol) */
-    PDS_UNIT_K,             /**< Kelvin (K) */
-    PDS_UNIT_MB,            /**< Mega Bytes (MB) */
-    PDS_UNIT_MHz,           /**< Megahertz (MHz) */
-    PDS_UNIT_N,             /**< Newton (N) */
-    PDS_UNIT_Nm,            /**< Newton meter (N.m) */
-    PDS_UNIT_Nms,           /**< Newton meter second (N.m.s) */
-    PDS_UNIT_NONE,          /**< No unit of measurement defined */
-    PDS_UNIT_N_m,           /**< Newton per meter (N/m) */
-    PDS_UNIT_N_m2,          /**< Newton per square meter (N/m^2) */
-    PDS_UNIT_Pa,            /**< Pascal (Pa) */
-    PDS_UNIT_Pas,           /**< Pascal second (Pa.s) */
-    PDS_UNIT_S,             /**< Siemens (S) */
-    PDS_UNIT_Sv,            /**< Sievert (Sv) */
-    PDS_UNIT_T,             /**< Tesla (T) */
-    PDS_UNIT_V,             /**< Volt (V) */
-    PDS_UNIT_V_m,           /**< Volt per meter (V/m) */
-    PDS_UNIT_W,             /**< Watt (W) */
-    PDS_UNIT_W_m2_sr,       /**< Watt per square meter per steradian (W/m^2/sr) */
-    PDS_UNIT_W_m2_sr_nm,    /**< Watt per square meter per steradian per nanometer (W/m^2/sr/nm) */
-    PDS_UNIT_W_m2_sr_um,    /**< Watt per square meter per steradian per micron (W/m^2/sr/um) */
-    PDS_UNIT_W_mK,          /**< Watt per meter kelvin (W/(m.K)) */
-    PDS_UNIT_W_m2,          /**< Watt per square meter (W/m^2) */
-    PDS_UNIT_W_sr,          /**< Watt per steradian (W/sr) */
-    PDS_UNIT_Wb,            /**< Weber (Wb) */
-    PDS_UNIT_arcsec_px,     /**< Arcsecond per pixel (arcsec/pixel) */
-    PDS_UNIT_arcsec,        /**< Arcsecond (arcsec) */
-    PDS_UNIT_b_px,          /**< Bits per pixel (b/pixel) */
-    PDS_UNIT_b_s,           /**< Bits per second (b/s) */
-    PDS_UNIT_bar,           /**< Bar (bar) */
-    PDS_UNIT_cd,            /**< Candela (cd) */
-    PDS_UNIT_cd_m2,         /**< Candela per square meter (cd/m^2) */
-    PDS_UNIT_count_min,     /**< Counts per minute (counts/min) */
-    PDS_UNIT_d,             /**< Day (d) */
-    PDS_UNIT_dB,            /**< Decibel (dB) */
-    PDS_UNIT_deg,           /**< Degree (deg) */
-    PDS_UNIT_deg_day,       /**< Degree per day (deg/day) */
-    PDS_UNIT_deg_s,         /**< Degree per second (deg/s) */
-    PDS_UNIT_c,             /**< Degree Celsius (c) */
-    PDS_UNIT_fps,           /**< Frame per second (fps) */
-    PDS_UNIT_g,             /**< Gram (g) */
-    PDS_UNIT_g_cm3,         /**< Gram per cubic centimeter (g/cm^3) */
-    PDS_UNIT_h,             /**< Hour (h) */
-    PDS_UNIT_kHz,           /**< Kilohertz (kHz) */
-    PDS_UNIT_kb_s,          /**< Kilobits per second (kb/s) */
-    PDS_UNIT_kg,            /**< Kilogram (kg) */
-    PDS_UNIT_kg_m3,         /**< Kilogram per cubic meter (kg/m^3) */
-    PDS_UNIT_km,            /**< Kilometer (km) */
-    PDS_UNIT__km,           /**< Reciprocal kilometer (km^-1) */
-    PDS_UNIT_km2,           /**< Kilometer squared (km^2) */
-    PDS_UNIT_km_px,         /**< Kilometer per pixel (km/px) */
-    PDS_UNIT_km_s,          /**< Kilometer per second (km/s) */
-    PDS_UNIT_lm,            /**< Lumen (lm) */
-    PDS_UNIT_lx,            /**< Lux (lx) */
-    PDS_UNIT_m,             /**< Meter (m) */
-    PDS_UNIT__m,            /**< Reciprocal meter (m^-1) */
-    PDS_UNIT_m2,            /**< Square meter (m^2) */
-    PDS_UNIT_m2_s,          /**< Square meter per second (m^2/s) */
-    PDS_UNIT_m3,            /**< Cubic meter (m^3) */
-    PDS_UNIT_m3_kg,         /**< Cubic meter per kilogram (m^3/kg) */
-    PDS_UNIT_m_px,          /**< Meters per pixel (m/px) */
-    PDS_UNIT_m_s,           /**< Meters per second (m/s) */
-    PDS_UNIT_m_s2,          /**< Meters per second squared (m/s^2) */
-    PDS_UNIT_mA,            /**< Milliampere (mA) */
-    PDS_UNIT_mag,           /**< Magnitude (mag) */
-    PDS_UNIT_um,            /**< Micron (um) */
-    PDS_UNIT_min,           /**< Minute (min) */
-    PDS_UNIT_mm,            /**< Millimiter (mm) */
-    PDS_UNIT_mm_s,          /**< Millimiter per second (mm/s) */
-    PDS_UNIT_mol,           /**< Mole (mol) */
-    PDS_UNIT_mol_m3,        /**< Mole per cubic meter (mol/m^3) */
-    PDS_UNIT_mrad,          /**< Milliradians (mrad) */
-    PDS_UNIT_ms,            /**< Millisecond (ms) */
-    PDS_UNIT_nT,            /**< Nanotesla (nT) */
-    PDS_UNIT_nm,            /**< Nanometer (nm) */
-    PDS_UNIT_ohm,           /**< Ohm (ohm) */
-    PDS_UNIT_px_line,       /**< Pixels per line (px/line) */
-    PDS_UNIT_px_deg,        /**< Pixels per degree (px/deg) */
-    PDS_UNIT_px,            /**< Pixel (px) */
-    PDS_UNIT_rad,           /**< Radian (rad) */
-    PDS_UNIT_rad_s,         /**< Radian per second (rad/s) */
-    PDS_UNIT_rad_s2,        /**< Radian per second squared (rad/s^2) */
-    PDS_UNIT_s,             /**< Second (s) */
-    PDS_UNIT_sr,            /**< Steradian (sr) */
-    PDS_UNIT_uW,            /**< Microwatts (uW) */
-    PDS_UNIT_us,            /**< Microsecond (us) */
-    PDS_UNIT_usd,           /**< United states dollars (us_dollar) */
+	PDS_UNKNOWN_STATEMENT = 0,
+	PDS_ATTRIBUTE_STATEMENT,
+	PDS_POINTER_STATEMENT,
+	PDS_OBJECT_STATEMENT,
+	PDS_GROUP_STATEMENT
 };
+#endif
+/**
+ * Remove leading and trailing white spaces in a string.
+ * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
+ * carriage return ('\r'), horizontal tab ('\t') or vertical tab ('\v').
+ * @param [in] first Pointer to the first character of the input string.
+ * @param [in] last Pointer to the last character of the input string.
+ * @param [out] begin Stores the pointer to the first non-space character.
+ * @param [out] end Stores the pointer to the last non-space character. 
+ */
+void PDS_trim(const char *first, const char *last, const char **begin, const char **end);
+/**
+ * Find the first occurence of a character in a string.
+ * @param [in] first Pointer to the first character of the input string.
+ * @param [in] last  Pointer to the last character of the input string.
+ * @param [in] c     Character to search.
+ * @return A pointer to the matched character in the input string or 0 if the
+ * character is not found.
+ */
+const char* PDS_find_first(const char *first, const char *last, char c);
+/**
+ * Compare two strings.
+ * @param [in] f0 Pointer to the first characer of the 1st string.
+ * @param [in] l0 Pointer to the last characer of the 1st string.
+ * @param [in] f1 Pointer to the first characer of the 2nd string.
+ * @param [in] l1 Pointer to the last characer of the 2nd string.
+ * @return 1 if the strings are equal, 0 otherwise.
+ */
+int PDS_string_compare(const char *f0, const char *l0, const char *f1, const char *l1);
+/**
+ * Compare two strings ignoring case.
+ * @param [in] f0 Pointer to the first characer of the 1st string.
+ * @param [in] l0 Pointer to the last characer of the 1st string.
+ * @param [in] f1 Pointer to the first characer of the 2nd string.
+ * @param [in] l1 Pointer to the last characer of the 2nd string.
+ * @return 1 if the strings are equal, 0 otherwise.
+ */
+int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, const char *l1);
 /**
  * Parse an integer number.
  * The number can be expressed in decimal or based notation.
@@ -144,10 +77,6 @@ enum PDS_UNITS
  * @param [in][out] status Status variable set to PDS_OK if an integer was
  *                  successfully parsed. If an error occured it is set to 
  *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
- * @return Parsed integer. In case of overflow INT32_MAX or (INT32_MIN for a
- * negative value) is returned, and the status variable is set to
- * PDS_INVALID_RANGE. If no conversion was performed, 0 is returned and the
- * status variable is set to PDS_INVALUD_VALUE.
  * @return Parsed integer. In case of overflow INT32_MAX or (INT32_MIN for a
  * negative value) is returned, and the status variable is set to
  * PDS_INVALID_RANGE. If no conversion was performed, 0 is returned and the
@@ -169,19 +98,6 @@ int32_t PDS_parse_int(const char* first, const char* last, const char** end, int
  * 0.0 is returned.
  */
 double PDS_parse_real(const char *first, const char *last, const char **end, int *status);
-
-/**
- * Parse unit string.
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid 
- *                  character of the input string.
- * @param [in][out] status Status variable set to PDS_OK if the string contains
- *                         a valid unit or PDS_INVALID_VALUE [todo]
- * @return @see PDS_UNITS.
- */
-int PDS_parse_unit(const char *first, const char *last, const char **end, int *status);
-
 /**
  * Parse identifier. 
  * @param [in] first First character of the input string.
@@ -215,35 +131,23 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 
 #ifdef PDS_IMPL
 
-#define PDS_isspace(c) (    (' '  == (c)) \
-                         || ('\f' == (c)) \
-                         || ('\n' == (c)) \
-                         || ('\r' == (c)) \
-                         || ('\t' == (c)) \
-                         || ('\v' == (c)) )
-
+#define PDS_isspace(c) (    (' '  == (c))  || ('\f' == (c)) \
+                         || ('\n' == (c))  || ('\r' == (c)) \
+                         || ('\t' == (c))  || ('\v' == (c)) )
 #define PDS_isdigit(c) (((c) >= '0') && ((c) <= '9'))
-
 #define PDS_islower(c) (((c) >= 'a') && ((c) <= 'z'))
-
 #define PDS_isupper(c) (((c) >= 'A') && ((c) <= 'Z'))
-
 #define PDS_isalpha(c) (PDS_islower(c) || PDS_isupper(c))
-
 #define PDS_isalnum(c) (PDS_isalpha(c) || PDS_isdigit(c))
+#define PDS_toupper(c) (PDS_islower(c) ? ('A' + ((c)-'a')) : (c))
+#define PDS_tolower(c) (PDS_isupper(c) ? ('a' + ((c)-'A')) : (c))
 
-static const char *PDS_eol = "\r\n";
-
-/**
+/*
  * Remove leading and trailing white spaces in a string.
  * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
  * carriage return ('\r'), horizontal tab ('\t') or vertical tab ('\v').
- * @param [in] first Pointer to the first character of the input string.
- * @param [in] last Pointer to the last character of the input string.
- * @param [out] begin Stores the pointer to the first non-space character.
- * @param [out] end Stores the pointer to the last non-space character. 
  */
-static void trim(const char *first, const char *last, const char **begin, const char **end)
+void PDS_trim(const char *first, const char *last, const char **begin, const char **end)
 {
     for(;(first<=last) && PDS_isspace(*first); ++first) 
     {}
@@ -252,16 +156,10 @@ static void trim(const char *first, const char *last, const char **begin, const 
 	*begin = (first<=last) ? first : 0;
 	*end   = (first<=last) ? last  : 0;
 }
-
-/**
+/*
  * Find the first occurence of a character in a string.
- * @param [in] first Pointer to the first character of the input string.
- * @param [in] last  Pointer to the last character of the input string.
- * @param [in] c     Character to search.
- * @return A pointer to the matched character in the input string or 0 if the
- * character is not found.
  */
-static const char* find_first(const char *first, const char *last, char c)
+const char* PDS_find_first(const char *first, const char *last, char c)
 {
 	while(first<=last)
 	{
@@ -272,24 +170,26 @@ static const char* find_first(const char *first, const char *last, char c)
 	}
 	return 0;
 }
-
-/**
+/*
+ * Compare two strings.
+ */
+int PDS_string_compare(const char *f0, const char *l0, const char *f1, const char *l1)
+{
+	for(; (f0<=l0) && (f1<=l1) && (*f0==*f1); ++f0, ++f1)
+	{}
+	return ((f0>l0)&&(f1>l1));
+}
+/*
+ * Compare two strings ignoring case.
+ */
+int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, const char *l1)
+{
+	for(; (f0<=l0) && (f1<=l1) && (PDS_toupper(*f0) == PDS_toupper(*f1)); ++f0, ++f1)
+	{}
+	return ((f0>l0)&&(f1>l1));
+}
+/*
  * Parse an integer in the specified base.
- * The number base must be in the range 2 to 16. Letters 'A' to 'F' in lower or
- * upper case are used for digits greater than 10. 
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid
- *                  character of the input string. 
- * @param [in] base Base in which the unsigned integer is encoded. The base must
- *                  be in the range 2 to 16. 
- * @param [in][out] status Status variable set to PDS_OK if an integer was
- *                  successfully parsed. If an error occured it is set to 
- *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
- * @return Parsed integer. In case of overflow INT32_MAX or (INT32_MIN for a
- * negative value) is returned, and the status variable is set to
- * PDS_INVALID_RANGE. If no conversion was performed, 0 is returned and the
- * status variable is set to PDS_INVALUD_VALUE.
  */
 static int32_t parse_int(const char *first, const char *last, const char **end, int base, int *status)
 {
@@ -387,7 +287,6 @@ static int32_t parse_int(const char *first, const char *last, const char **end, 
         return (int32_t)(neg ? -accumulator : accumulator);
     }
 }
-
 /*
  * Parse an integer number.
  */
@@ -443,7 +342,6 @@ int32_t PDS_parse_int(const char* first, const char* last, const char** end, int
     }
     return value;
 }
-
 /*
  * Parse a floating point value.
  */
@@ -537,110 +435,6 @@ double PDS_parse_real(const char *first, const char *last, const char **end, int
     *end = ptr;
     return value;   
 }
-
-/*
- * Parse unit. 
- */
-int PDS_parse_unit(const char *first, const char *last, const char **end, int *status)
-{
-    struct 
-    {
-        const char *str;
-        int         unit;
-    } dict[] =
-    {
-        {"A",         PDS_UNIT_A      }, {"A/m",       PDS_UNIT_A_m    },
-        {"A/m**2",    PDS_UNIT_A_m2   }, {"B",         PDS_UNIT_B      },
-        {"Bq",        PDS_UNIT_Bq     }, {"C",         PDS_UNIT_C      },
-        {"C/kg",      PDS_UNIT_C_Kg   }, {"C/m**2",    PDS_UNIT_C_m2   },
-        {"C/m**3",    PDS_UNIT_C_m3   }, {"F",         PDS_UNIT_F      },
-        {"F/m",       PDS_UNIT_F_m    }, {"GHz",       PDS_UNIT_GHz    },
-        {"Gy",        PDS_UNIT_Gy     }, {"Gy/s",      PDS_UNIT_Gy_s   },
-        {"H",         PDS_UNIT_H      }, {"H/m",       PDS_UNIT_H_m    },
-        {"Hz",        PDS_UNIT_Hz     }, {"J",         PDS_UNIT_J      },
-        {"J/(kg.K)",  PDS_UNIT_J_KgK  }, {"J/(m**2)/s",PDS_UNIT_J_m2_s },
-        {"J/(mol.K)", PDS_UNIT_J_molK }, {"J/K",       PDS_UNIT_J_K    }, 
-        {"J/T",       PDS_UNIT_J_T    }, {"J/kg",      PDS_UNIT_J_Kg   },
-        {"J/m**3",    PDS_UNIT_J_m3   }, {"J/mol",     PDS_UNIT_J_mol  },
-        {"K",         PDS_UNIT_K      }, {"MB",        PDS_UNIT_MB     },
-        {"MHz",       PDS_UNIT_MHz    }, {"N",         PDS_UNIT_N      },
-        {"N.m",       PDS_UNIT_Nm     }, {"N.m.s",     PDS_UNIT_Nms    },
-        {"N/A",       PDS_UNIT_NONE   }, {"N/m",       PDS_UNIT_N_m    },
-        {"N/m**2",    PDS_UNIT_N_m2   }, {"Pa",        PDS_UNIT_Pa     },
-        {"Pa.s",      PDS_UNIT_Pas    }, {"S",         PDS_UNIT_S      },
-        {"Sv",        PDS_UNIT_Sv     }, {"T",         PDS_UNIT_T      },
-        {"V",         PDS_UNIT_V      }, {"V/m",       PDS_UNIT_V_m    },
-        {"W",         PDS_UNIT_W      },
-        {"W.m**-2.sr**-1",        PDS_UNIT_W_m2_sr    },
-        {"W.m**-2.sr**-1.nm**-1", PDS_UNIT_W_m2_sr_nm },
-        {"W/(m**2*sr*micron)",    PDS_UNIT_W_m2_sr_um },
-        {"W/(m.K)",   PDS_UNIT_W_mK   }, {"W/m**2",    PDS_UNIT_W_m2   },
-        {"W/sr",      PDS_UNIT_W_sr   }, {"Wb",        PDS_UNIT_Wb     },
-        {"arcsec/pixel", PDS_UNIT_arcsec_px }, 
-        {"arcsecond", PDS_UNIT_arcsec }, {"b/pixel",   PDS_UNIT_b_px   },
-        {"b/s",       PDS_UNIT_b_s    }, {"bar",       PDS_UNIT_bar    },
-        {"cd",        PDS_UNIT_cd     }, {"cd/m**2",   PDS_UNIT_cd_m2  },
-        {"counts/minute", PDS_UNIT_count_min },
-        {"d",         PDS_UNIT_d      }, {"dB",        PDS_UNIT_dB     },
-        {"deg",       PDS_UNIT_deg    }, {"deg/day",   PDS_UNIT_deg_day},
-        {"deg/s",     PDS_UNIT_deg_s  }, {"degC",      PDS_UNIT_c      },
-        {"fps",       PDS_UNIT_fps    }, {"g",         PDS_UNIT_g      },
-        {"g/cm**3",   PDS_UNIT_g_cm3  }, {"h",         PDS_UNIT_h      },
-        {"kHz",       PDS_UNIT_kHz    }, {"kb/s",      PDS_UNIT_kb_s   },
-        {"kg",        PDS_UNIT_kg     }, {"kg/m**3",   PDS_UNIT_kg_m3  },
-        {"km",        PDS_UNIT_km     }, {"km**-1",    PDS_UNIT__km    },
-        {"km**2",     PDS_UNIT_km2    }, {"km/pix",    PDS_UNIT_km_px  },
-        {"km/pixel",  PDS_UNIT_km_px  }, {"km/s",      PDS_UNIT_km_s   },
-        {"lm",        PDS_UNIT_lm     },
-        {"local day/24", PDS_UNIT_UNKNOWN },
-        {"lx",        PDS_UNIT_lx     }, {"m",         PDS_UNIT_m      },
-        {"m**-1",     PDS_UNIT__m     }, {"m**2",      PDS_UNIT_m2     },
-        {"m**2/s",    PDS_UNIT_m2_s   }, {"m**3",      PDS_UNIT_m3     },
-        {"m**3/kg",   PDS_UNIT_m3_kg  }, {"m/pix",     PDS_UNIT_m_px   },
-        {"m/pixel",   PDS_UNIT_m_px   }, {"m/s",       PDS_UNIT_m_s    },
-        {"m/s**2",    PDS_UNIT_m_s2   }, {"mA",        PDS_UNIT_mA     },
-        {"mag",       PDS_UNIT_mag    }, {"micron",    PDS_UNIT_um     },
-        {"min",       PDS_UNIT_min    }, {"mm",        PDS_UNIT_mm     },
-        {"mm/s",      PDS_UNIT_mm_s   }, {"mol",       PDS_UNIT_mol    },
-        {"mol/m**3",  PDS_UNIT_mol_m3 }, {"mrad",      PDS_UNIT_mrad   },
-        {"ms",        PDS_UNIT_ms     }, {"n/a",       PDS_UNIT_NONE   },
-        {"nT",        PDS_UNIT_nT     }, {"nm",        PDS_UNIT_nm     },
-        {"none",      PDS_UNIT_NONE   }, {"ohm",       PDS_UNIT_ohm    },
-        {"p/line",    PDS_UNIT_px_line}, {"pix/deg",   PDS_UNIT_px_deg },
-        {"pix/degree",PDS_UNIT_px_deg }, {"pixel",     PDS_UNIT_px     },
-        {"pixel/deg",    PDS_UNIT_px_deg },
-        {"pixel/degree", PDS_UNIT_px_deg },
-        {"rad",       PDS_UNIT_rad    }, {"rad/s",     PDS_UNIT_rad_s  },
-        {"rad/s**2",  PDS_UNIT_rad_s2 }, {"s",         PDS_UNIT_s      },
-        {"sr",        PDS_UNIT_sr     }, {"uW",        PDS_UNIT_uW     },
-        {"us",        PDS_UNIT_us     }, {"us_dollar", PDS_UNIT_usd    },
-        { 0, PDS_UNIT_UNKNOWN }
-    };
-    int i;
-    int j;
-    int len;
-    const char *ptr = first;
-    if((PDS_OK == *status) && ('<' == *first) && ('>' == *last))
-    {
-        ++ptr;
-        len = last-ptr;
-        for(i=0; dict[i].str; i++)
-        {
-            for(j=0; (j<len) && dict[i].str[j] && (dict[i].str[j] == ptr[j]); j++)
-            {}
-            if(j==len)
-            {
-                *end = last+1;
-                *status = PDS_OK;
-                return dict[i].unit;
-            }
-        }
-    }
-    *end = first;
-    *status = PDS_INVALID_VALUE;
-    return PDS_UNIT_UNKNOWN;    
-}
-
 /*
  * Parse identifier. 
  */
@@ -666,7 +460,7 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 	}
 	
 	/* Then follows alphanumeric or '_'. */
-	for(; (ptr<=last) && (PDS_OK == *status); )
+	while(ptr<=last)
 	{
 		previous = c;
 		c = *ptr++;
@@ -676,6 +470,7 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 			if(!PDS_isalnum(previous))
 			{
 				*status = PDS_INVALID_VALUE;
+				break;
 			}
 		}
 		else if(!PDS_isalnum(c))
@@ -696,45 +491,43 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 
 #if 0
 // [todo]
-const char* PDS_parse_statement(const char* first, const char* last, const char **end, int *status)
+void PDS_parse_statement(const char* first, const char* last, , int *status)
 {
-	const char *identifier_end;
-	const char *end_of_line;
+	const char *assignment_op;
+	const char *lvalue_first, *lvalue_last;
+	const char *rvalue_first, *rvalue_last;
 
 	/* Sanity check. */
 	if(PDS_OK != *status)
 	{
-		return 0;
+		return;
 	}
 
-	/* Search for equal sign. */
-	identifier_end = find_first(first, last, '=');
-	if(0 == identifier_end)
+	/* Search for assignment operator. */
+	assignment_op = find_first(first, last, '=');
+	if(0 == assignment_op)
 	{
 		*status = PDS_MISSING_SEPARATOR;
-		*end = first;
-		return 0;
-	}
-
-	/* Search for end-of-line. */
-	end_of_line = find_first(identifier_end, last, '\r');
-	if(0 == identifier_end)
-	{
-		*status = PDS_MISSING_SEPARATOR;
-		*end = first;
-		return 0;
-	}
-	// [todo] size check
-	if('\n' != identifier_end[1])
-	{
-		// [todo]
-		return 0;
+		return;
 	}
 
 	/* Parse lvalue. */
-	/* Parse rvalue. */
+	trim(first, assignment_op-1, &lvalue_first, &lvalue_last);
+	if((0==lvalue_first) || (0==lvalue_last))
+	{
+		*status = PDS_EMPTY;
+		return;
+	}
 
-	return 0;
+	/* Parse rvalue. */
+	trim(assignment_op+1, last, &rvalue_first, &rvalue_last);
+	if((0==rvalue_first) || (0==rvalue_last))
+	{
+		*status = PDS_EMPTY;
+		return;
+	}
+	
+	return ;
 }
 #endif
 
