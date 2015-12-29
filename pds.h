@@ -9,24 +9,10 @@
 enum PDS_STATUS
 {
     PDS_OK = 0,
-	PDS_EMPTY,
     PDS_INVALID_VALUE,
     PDS_INVALID_RANGE,
 	PDS_MISSING_SEPARATOR,
 };
-#if 0
-/**
- * PDS Statement types (12.4).
- */
-enum PDS_STATEMENTS
-{
-	PDS_UNKNOWN_STATEMENT = 0,
-	PDS_ATTRIBUTE_STATEMENT,
-	PDS_POINTER_STATEMENT,
-	PDS_OBJECT_STATEMENT,
-	PDS_GROUP_STATEMENT
-};
-#endif
 /**
  * Remove leading and trailing white spaces in a string.
  * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
@@ -106,7 +92,7 @@ double PDS_parse_real(const char *first, const char *last, const char **end, int
  *                  character of the input string.
  * @param [in][out] status Status variable set to PDS_OK if the string contains
  *                         a valid unit or PDS_INVALID_VALUE.
- * @return Pointer to the beginning of the indetifier or 0 if the string is invalid.
+ * @return Pointer to the beginning of the identifier or 0 if the string is invalid.
  */
 const char* PDS_parse_identifier(const char *first, const char *last, const char **end, int *status);
 
@@ -131,6 +117,8 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 
 #ifdef PDS_IMPL
 
+#define PDS_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+
 #define PDS_isspace(c) (    (' '  == (c))  || ('\f' == (c)) \
                          || ('\n' == (c))  || ('\r' == (c)) \
                          || ('\t' == (c))  || ('\v' == (c)) )
@@ -149,9 +137,9 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
  */
 void PDS_trim(const char *first, const char *last, const char **begin, const char **end)
 {
-    for(;(first<=last) && PDS_isspace(*first); ++first) 
+    for(; (first <= last) && PDS_isspace(*first); ++first) 
     {}
-    for(;(last>=first) && PDS_isspace(*last); --last)
+    for(; (last>=first) && PDS_isspace(*last); --last)
     {}
 	*begin = (first<=last) ? first : 0;
 	*end   = (first<=last) ? last  : 0;
@@ -489,45 +477,236 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 	return 0;
 }
 
-#if 0
-// [todo]
-void PDS_parse_statement(const char* first, const char* last, , int *status)
+/**
+ * PDS token type.
+ * These types correspond to the type of assignment they belong to.
+ */
+enum PDS_TOKEN_TYPE
 {
-	const char *assignment_op;
-	const char *lvalue_first, *lvalue_last;
-	const char *rvalue_first, *rvalue_last;
+	PDS_TOKEN_UNKNOWN = 0,
+	PDS_TOKEN_ATTRIBUTE,
+	PDS_TOKEN_POINTER,
+	PDS_TOKEN_GROUP,
+	PDS_TOKEN_OBJECT,
+};
+// [todo] subtype/flags
+/**
+ * PDS token.
+ */
+typedef struct
+{
+	/** Pointer to the first character of the token. **/ 
+	const char *first;
+	/** Pointer to the last character of the token. **/
+	const char *last;
+	/** Token type. **/
+	int type;
+	// [todo] subtype/flags
+	// [todo] type
+	// [todo] multiline?
+} PDS_token;
+// [todo] struct PDS_lexer
+/**
+ * Parse pointer identifier.
+ * @param [in][out] lhs Token to be parsed.
+ * @param [in][out] status Status variable set to PDS_OK if an integer was
+ *                  successfully parsed. If an error occured it is set to 
+ *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
+ * @return 1 if the pointer identifier was succesfully parsed, or 0 otherwise.
+ */
+static int parse_lhs_pointer(PDS_token *lhs, int *status)
+{
+	const char *begin = 0;
+	const char *end   = 0;	
 
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+		
+	begin = PDS_parse_identifier(lhs->first+1, lhs->last, &end, status);
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+	else if ((begin != lhs->first+1) || (end != lhs->last+1))
+	{
+		*status = PDS_INVALID_VALUE;
+		return 0;
+	}
+	else
+	{
+		/* Skip pointer character (^). */
+		++lhs->first;
+		return 1;
+	}
+} 
+/**
+ * Parse attribute name.
+ * A attribute name is an identifier or the concatenation of a namespace and an identifier separated by ':'.
+ * @param [in][out] lhs Token to be parsed.
+ * @param [in][out] status Status variable set to PDS_OK if an integer was
+ *                  successfully parsed. If an error occured it is set to 
+ *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
+ * @return 1 if the pointer identifier was succesfully parsed, or 0 otherwise.
+ */
+static int parse_lhs_attribute(PDS_token *lhs, int *status)
+{
+	const char *begin = 0;
+	const char *end   = 0;
+
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+
+	begin = PDS_parse_identifier(lhs->first, lhs->last, &end, status);
+	if(0 == begin)
+	{
+		return 0;
+	}
+	/* If the string was not fully parsed, check for "namespace:identifier" form. */
+	if(end < lhs->last)
+	{
+		/* Check for namespace separator. */
+		if(':' != *end)
+		{
+			*status = PDS_INVALID_VALUE;
+			return 0;
+		}
+		/* Parse attribute identifier. */
+		begin = PDS_parse_identifier(end+1, lhs->last, &end, status);
+		if(0 == begin)
+		{
+			return 0;
+		}
+	}
+	/* At this point the whole string should have been parsed. */
+	if(end != lhs->last+1)
+	{
+		*status = PDS_INVALID_VALUE;
+		return 0;
+	}
+	return 1;	
+}
+/**
+ * Parse left hand side token.
+ * [todo] format rules
+ * lhs_token   := attribute_id | group | object | pointer
+ * attibute_id := identifier | namespace:identifier
+ * namespace   := identifier
+ * group       := 'begin_group' | 'end_group'
+ * object      := 'begin_object' | 'end_object'
+ * pointer     := ^identifier
+ * @param [in][out] token [todo].
+ * @param [in][out] status Status variable set to PDS_OK if an integer was
+ *                  successfully parsed. If an error occured it is set to 
+ *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
+ * @return  
+ */
+static int parse_lhs(PDS_token *lhs, int *status)
+{
+	static const char name_buffer[] = "^end_groupend_object";
+
+	static const struct
+	{
+		off_t first;
+		off_t last;
+		int   type;
+		// [todo] subtype/flags
+		int (*parse) (PDS_token *token, int *status);
+	} lhs_parser[] =
+	{
+		{ 0, 0, PDS_TOKEN_POINTER,   parse_lhs_pointer },   /* pointer    */
+		{ 5, 9, PDS_TOKEN_GROUP,     0 },                   /* group      */
+		{ 1, 9, PDS_TOKEN_GROUP,     0 },                   /* end_group  */
+		{14,19, PDS_TOKEN_OBJECT,    0 },                   /* object     */
+		{10,19, PDS_TOKEN_OBJECT,    0 },                   /* end_object */
+		{-1,-1, PDS_TOKEN_ATTRIBUTE, parse_lhs_attribute }, /* attribute  */
+	};
+	int i;
+	int ret;
 	/* Sanity check. */
 	if(PDS_OK != *status)
 	{
-		return;
+		return 0;
 	}
 
-	/* Search for assignment operator. */
-	assignment_op = find_first(first, last, '=');
-	if(0 == assignment_op)
+	for(i=0; i<PDS_ARRAY_SIZE(lhs_parser); i++)
 	{
-		*status = PDS_MISSING_SEPARATOR;
-		return;
+		ret = (lhs_parser[i].first >= 0)
+		      ? PDS_string_case_compare(lhs->first, lhs->last, name_buffer+lhs_parser[i].first, name_buffer+lhs_parser[i].last)
+			  : 0;
+
+		if(0 == ret)
+		{
+			if((0 != lhs_parser[i].parse) && (0 == lhs_parser[i].parse(lhs, status)))
+			{
+				// Parsing failed!
+				break;
+			}
+			lhs->type = lhs_parser[i].type;
+			// [todo] subtype/flags ...
+			return 1;	 
+		}
 	}
 
-	/* Parse lvalue. */
-	trim(first, assignment_op-1, &lvalue_first, &lvalue_last);
-	if((0==lvalue_first) || (0==lvalue_last))
+	/* No valid token found. */ 
+	if(PDS_OK == *status)
 	{
-		*status = PDS_EMPTY;
-		return;
+		*status = PDS_INVALID_VALUE;
 	}
-
-	/* Parse rvalue. */
-	trim(assignment_op+1, last, &rvalue_first, &rvalue_last);
-	if((0==rvalue_first) || (0==rvalue_last))
+	return 0;
+}
+#if 0
+static int skip_whitespaces(/*[todo]*/, const char **end, int *status)
+{
+	while(first<=last)
 	{
-		*status = PDS_EMPTY;
-		return;
+		// Skip spaces and keep track of the current line number. 
+		for(;(first<=last) && PDS_isspace(*first); *first++)
+		{
+			// if(*first == '\n') { ++line; }
+		}
+		// Skip comment.
+		if((first<=last) && ('/' == *first++))
+		{
+			if(first>=last)
+			{
+				return 0;
+			}
+			if('*' != *first++)
+			{
+				return 0;
+			}
+			for( ;first<=last; first++)
+			{
+				if(('\r' == *first) || ('\n' == *first))
+				{
+					return 0;
+				}
+				if('/' == *first)
+				{
+					if('*' == *(first-1))
+					{
+						break;
+					}
+					if((first < last) && ('*' == *(first+1))
+					{
+						// [todo] nested comment
+						return 0;
+					}
+				}
+			}
+		}
+		else
+		{
+			/* Not a comment. */
+			break;
+		}	
 	}
-	
-	return ;
+	*end = first;
+	return 1;
 }
 #endif
 
