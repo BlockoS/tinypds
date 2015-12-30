@@ -18,12 +18,14 @@ struct \
 
 #define test_data(s, e, x, a) { .str=s, .end=e, .expected=x, .status=a }
 
-#define end_test_data() { .str=0 } };
+#define test_pair(a,b) { a, b }
+
+#define end_test_data() };
 
 #define test_str(i) (tv[(i)].str)
 #define test_end(i) (tv[(i)].str+tv[(i)].end)
 #define test_status(i) (tv[(i)].status)
 #define test_expected(i) (tv[(i)].expected)
-#define test_foreach(i) for(i=0; 0!=tv[(i)].str; ++i) 
+#define test_foreach(i) for(i=0; i<(sizeof(tv)/sizeof(tv[0])); ++i) 
 
 #endif /* TEST_H */

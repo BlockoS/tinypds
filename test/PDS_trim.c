@@ -6,24 +6,13 @@
 
 int main()
 {
-	const struct
-	{
-		const char *str;
-		struct
-		{
-			off_t begin;
-			off_t end;
-		} expected;
-	} tv [] = 
-	{
-		{ "\t\n   \r test_\t  fin", { 7, 17 } },
-		{     "\t  [ string ]\r\n", { 3, 12 } },
-		{           "another test", { 0, 11 } },
-		{           "_+=*\t\t\t\n", { 0,  3 } },
-		{          "   \r\v\t \n ", {-1, -1 } },
-		{ 0, { 0, 0 } },
-	};	
-
+	begin_test_data(off_t)
+		test_data( "\t\n   \r test_\t  fin", 17, 7, PDS_OK ),
+		test_data(     "\t  [ string ]\r\n", 12, 3, PDS_OK ),
+		test_data(           "another test", 11, 0, PDS_OK ),
+		test_data(           "_+=*\t\t\t\n",  3, 0, PDS_OK ),
+		test_data(          "   \r\v\t \n ", -1,-1, PDS_INVALID_VALUE ),	
+	end_test_data()	
 
     int i;
 	test_foreach(i)
@@ -34,15 +23,15 @@ int main()
 		const char *end   = 0;
 
         PDS_trim(first, last, &begin, &end);
-		if(test_expected(i).begin < 0)
+		if(PDS_OK != test_status(i))
 		{
 			check(0 == begin);
 			check(0 == end);
 		}
 		else
 		{
-			check((first+test_expected(i).begin) == begin);
-			check((first+test_expected(i).end) == end);
+			check(first+test_expected(i) == begin);
+			check(test_end(i) == end);
 		}
 	}
     return EXIT_SUCCESS;

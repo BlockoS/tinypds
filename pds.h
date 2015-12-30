@@ -96,14 +96,6 @@ double PDS_parse_real(const char *first, const char *last, const char **end, int
  */
 const char* PDS_parse_identifier(const char *first, const char *last, const char **end, int *status);
 
-/* [todo]
- * struct value
- * {
- *    union { int32_t, double, };
- *    type { INTEGER, REAL }
- *    unit { enum from pdsdd.full }
- * }
- */
 /* [todo] parse string */
 /* [todo] parse literal */
 /* [todo] parse date */
@@ -129,6 +121,54 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 #define PDS_isalnum(c) (PDS_isalpha(c) || PDS_isdigit(c))
 #define PDS_toupper(c) (PDS_islower(c) ? ('A' + ((c)-'a')) : (c))
 #define PDS_tolower(c) (PDS_isupper(c) ? ('a' + ((c)-'A')) : (c))
+
+/**
+ * PDS token type.
+ * These types correspond to the type of assignment they belong to.
+ */
+enum PDS_TOKEN_TYPE
+{
+	PDS_TOKEN_UNKNOWN = 0,
+	PDS_TOKEN_ATTRIBUTE,
+	PDS_TOKEN_POINTER,
+	PDS_TOKEN_GROUP,
+	PDS_TOKEN_OBJECT,
+};
+// [todo] subtype/flags
+/**
+ * PDS token.
+ */
+typedef struct
+{
+	/** Pointer to the first character of the token. **/ 
+	const char *first;
+	/** Pointer to the last character of the token. **/
+	const char *last;
+	/** Token type (@see PDS_TOKEN_TYPE). **/
+	int type;
+	// [todo] subtype/flags
+} PDS_token;
+/**
+ * [todo]
+ */
+typedef struct
+{
+	/** Current status (@see PDS_STATUS). **/
+	int status;
+	/** Pointer to the first character of the input text. **/
+	const char *first;
+	/** Pointer to the last character of the input text. **/
+	const char *last;
+	/** Pointer to the current character. **/
+	const char *current;
+	/** Line that is being parsed.**/
+	int line;
+	/** Last valid line. **/
+	int last_line;
+	/* [todo] callbacks + userdata */
+} PDS_parser;
+
+/*****************************************************************************/
 
 /*
  * Remove leading and trailing white spaces in a string.
@@ -176,6 +216,9 @@ int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, cons
 	{}
 	return ((f0>l0)&&(f1>l1));
 }
+
+/*****************************************************************************/
+
 /*
  * Parse an integer in the specified base.
  */
@@ -477,35 +520,8 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 	return 0;
 }
 
-/**
- * PDS token type.
- * These types correspond to the type of assignment they belong to.
- */
-enum PDS_TOKEN_TYPE
-{
-	PDS_TOKEN_UNKNOWN = 0,
-	PDS_TOKEN_ATTRIBUTE,
-	PDS_TOKEN_POINTER,
-	PDS_TOKEN_GROUP,
-	PDS_TOKEN_OBJECT,
-};
-// [todo] subtype/flags
-/**
- * PDS token.
- */
-typedef struct
-{
-	/** Pointer to the first character of the token. **/ 
-	const char *first;
-	/** Pointer to the last character of the token. **/
-	const char *last;
-	/** Token type. **/
-	int type;
-	// [todo] subtype/flags
-	// [todo] type
-	// [todo] multiline?
-} PDS_token;
-// [todo] struct PDS_lexer
+/*****************************************************************************/
+
 /**
  * Parse pointer identifier.
  * @param [in][out] lhs Token to be parsed.
@@ -658,42 +674,68 @@ static int parse_lhs(PDS_token *lhs, int *status)
 	}
 	return 0;
 }
-#if 0
-static int skip_whitespaces(/*[todo]*/, const char **end, int *status)
+
+/*****************************************************************************/
+
+/**
+ * Skip whitespaces and comments from string.
+ * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
+ * carriage return ('\r'), horizontal tab ('\t') or vertical tab ('\v').
+ * Comments are C-like comments, but unlike them they must fit on a single line.
+ * Nested comments are forbidden.
+ * @param [in][out] parser PDS parser context.
+ * @return 0 if an error occured, 1 upon success.
+ */
+static int skip_whitespaces(PDS_parser *parser)
 {
-	while(first<=last)
+	if(PDS_OK != parser->status)
 	{
-		// Skip spaces and keep track of the current line number. 
-		for(;(first<=last) && PDS_isspace(*first); *first++)
+		return 0;
+	}
+
+	for( ;parser->current <= parser->last; parser->current++)
+	{
+		/* Skip spaces and keep track of the current line number. */
+		if(PDS_isspace(*parser->current))
 		{
-			// if(*first == '\n') { ++line; }
+			if('\n' == *parser->current)
+			{
+				++parser->line; 
+			}
 		}
-		// Skip comment.
-		if((first<=last) && ('/' == *first++))
+		/* Skip comment. */
+		else if((parser->current <= parser->last) && ('/' == *parser->current))
 		{
-			if(first>=last)
+			++parser->current;
+			if(parser->current >= parser->last)
 			{
+				parser->status = PDS_INVALID_VALUE;
 				return 0;
 			}
-			if('*' != *first++)
+			if('*' != *parser->current)
 			{
+				parser->status = PDS_INVALID_VALUE;
 				return 0;
 			}
-			for( ;first<=last; first++)
+			++parser->current;
+			for( ;parser->current <= parser->last; parser->current++)
 			{
-				if(('\r' == *first) || ('\n' == *first))
+				if(('\r' == *parser->current) || ('\n' == *parser->current))
 				{
+					/* Comments must fit on a single line. */
+					parser->status = PDS_INVALID_VALUE;
 					return 0;
 				}
-				if('/' == *first)
+				if('/' == *parser->current)
 				{
-					if('*' == *(first-1))
+					if('*' == *(parser->current-1))
 					{
 						break;
 					}
-					if((first < last) && ('*' == *(first+1))
+					if((parser->current < parser->last) && ('*' == *(parser->current+1)))
 					{
-						// [todo] nested comment
+						/* Nested comments. */
+						parser->status = PDS_INVALID_VALUE;
 						return 0;
 					}
 				}
@@ -701,13 +743,11 @@ static int skip_whitespaces(/*[todo]*/, const char **end, int *status)
 		}
 		else
 		{
-			/* Not a comment. */
+			/* Not a space nor a comment. */
 			break;
-		}	
+		}
 	}
-	*end = first;
 	return 1;
 }
-#endif
 
 #endif /* PDS_IMPL */

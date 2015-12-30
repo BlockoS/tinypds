@@ -13,7 +13,6 @@ int main()
         test_data(           "DOUBLE__SEPARATOR",  0, 0, PDS_INVALID_VALUE ), 
         test_data(                 "INVALID_@ID",  0, 0, PDS_INVALID_VALUE ),
         test_data(                 "_INVALID_ID",  0, 0, PDS_INVALID_VALUE ),
-        test_data(                             0,  0, 0, 0 ),
     end_test_data()
 
     int i;
