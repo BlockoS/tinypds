@@ -91,10 +91,21 @@ double PDS_parse_real(const char *first, const char *last, const char **end, int
  * @param [out] end If not null stores the pointer to the first invalid 
  *                  character of the input string.
  * @param [in][out] status Status variable set to PDS_OK if the string contains
- *                         a valid unit or PDS_INVALID_VALUE.
+ *                         a valid identifier or PDS_INVALID_VALUE.
  * @return Pointer to the beginning of the identifier or 0 if the string is invalid.
  */
 const char* PDS_parse_identifier(const char *first, const char *last, const char **end, int *status);
+/**
+ * Parse measurement unit. 
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid 
+ *                  character of the input string.
+ * @param [in][out] status Status variable set to PDS_OK if the string contains
+ *                         a valid unit or PDS_INVALID_VALUE.
+ * @return Pointer to the beginning of the identifier or 0 if the string is invalid.
+ */
+int PDS_parse_unit(const char *first, const char *last, const char **end, int *status);
 
 /* [todo] parse string */
 /* [todo] parse literal */
@@ -106,6 +117,8 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 /* [todo] parse object */
 /* [todo] parse group */
 #endif /* PDS_H */
+
+/*****************************************************************************/
 
 #ifdef PDS_IMPL
 
@@ -518,6 +531,81 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 	*end    = first;
 	*status = PDS_INVALID_VALUE;
 	return 0;
+}
+/*
+ * Parse a measurement unit. 
+ */
+int PDS_parse_unit(const char *first, const char *last, const char **end, int *status)
+{
+	*end = first;
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+	if('<' != *first)
+	{
+		*status = PDS_INVALID_VALUE;
+		return 0;
+	}
+	++first;
+	if(first >= last)
+	{
+		return 0;
+	}
+	while(first<last)
+	{
+		/* unit factor */
+		for(; (first<last) && (PDS_isalpha(*first) || ('_'==*first)); first++)
+		{}
+		/* Check for multiplier, exponent or divisor. */
+		if(first < last)
+		{
+			if('*' == *first)
+			{
+				++first;
+				if('*' == *first)
+				{
+					const char *next = 0;
+					(void)parse_int(first+1, last, &next, 10, status);
+					if(PDS_OK != *status)
+					{
+						return 0;
+					}
+					first = next;
+				}
+				else if(!PDS_isalpha(*first))
+				{
+					*status = PDS_INVALID_VALUE;
+					return 0;
+				}
+			}
+			else if('/' == *first)
+			{
+				++first;
+				if(!PDS_isalpha(*first))
+				{
+					*status = PDS_INVALID_VALUE;
+					return 0;
+				}
+			}
+			else if('>' == *first)
+			{
+				break;
+			}
+			else
+			{
+				*status = PDS_INVALID_VALUE;
+				return 0;
+			}
+		}
+	}
+	if((first>last) || (*first != '>'))
+	{
+		*status = PDS_INVALID_VALUE;
+		return 0;
+	}
+	*end = first+1;
+	return 1;
 }
 
 /*****************************************************************************/
