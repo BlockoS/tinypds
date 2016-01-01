@@ -96,19 +96,37 @@ double PDS_parse_real(const char *first, const char *last, const char **end, int
  */
 const char* PDS_parse_identifier(const char *first, const char *last, const char **end, int *status);
 /**
- * Parse measurement unit. 
+ * Parse measurement unit.
+ * If the parsing was succesfull, the content of the measurement string can be retreived from first+1 to 
+ * end-1(excluded). 
  * @param [in] first First character of the input string.
  * @param [in] last Last character of the input string.
  * @param [out] end If not null stores the pointer to the first invalid 
  *                  character of the input string.
  * @param [in][out] status Status variable set to PDS_OK if the string contains
  *                         a valid unit or PDS_INVALID_VALUE.
- * @return Pointer to the beginning of the identifier or 0 if the string is invalid.
+ * @return 1 if a valid unit was parsed, 0 if the string is invalid.
  */
 int PDS_parse_unit(const char *first, const char *last, const char **end, int *status);
+/**
+ * Parse a quoted symbol.
+ * If the parsing was succesfull, the content of the quoted symbol can be retreived from first+1 to 
+ * end-1(excluded). 
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid 
+ *                  character of the input string.
+ * @param [in][out] status Status variable set to PDS_OK if the string contains
+ *                         a valid quoted symbol or PDS_INVALID_VALUE.
+ * @return 1 if the string contains a valid quoted symbol, 0 if the string is invalid.
+ */
+int PDS_parse_symbol(const char *first, const char *last, const char **end, int *status);
+/**
+ *
+ */
+// [todo] int PDS_parse_string(const char *first, const char *last, const char **end, int *status);
 
 /* [todo] parse string */
-/* [todo] parse literal */
 /* [todo] parse date */
 /* [todo] parse sequence */
 /* [todo] parse set */
@@ -124,9 +142,9 @@ int PDS_parse_unit(const char *first, const char *last, const char **end, int *s
 
 #define PDS_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-#define PDS_isspace(c) (    (' '  == (c))  || ('\f' == (c)) \
-                         || ('\n' == (c))  || ('\r' == (c)) \
-                         || ('\t' == (c))  || ('\v' == (c)) )
+#define PDS_isspace(c) (    (' '  == (c))  || ('\t' == (c)) \
+                         || ('\r' == (c))  || ('\n' == (c)) \
+                         || ('\f' == (c))  || ('\v' == (c)) )
 #define PDS_isdigit(c) (((c) >= '0') && ((c) <= '9'))
 #define PDS_islower(c) (((c) >= 'a') && ((c) <= 'z'))
 #define PDS_isupper(c) (((c) >= 'A') && ((c) <= 'Z'))
@@ -134,6 +152,13 @@ int PDS_parse_unit(const char *first, const char *last, const char **end, int *s
 #define PDS_isalnum(c) (PDS_isalpha(c) || PDS_isdigit(c))
 #define PDS_toupper(c) (PDS_islower(c) ? ('A' + ((c)-'a')) : (c))
 #define PDS_tolower(c) (PDS_isupper(c) ? ('a' + ((c)-'A')) : (c))
+
+#if 0
+static const char *PDS_special_chars    = "={}()+-<>.\"\'_,/*:#&^";
+static const char *PDS_spacing_chars    = " \t";
+static const char *PDS_format_effectors = "\r\n\f\v";
+static const char *PDS_other_chars      = "!$%;?@[]`|~";
+#endif
 
 /**
  * PDS token type.
@@ -599,7 +624,43 @@ int PDS_parse_unit(const char *first, const char *last, const char **end, int *s
 			}
 		}
 	}
-	if((first>last) || (*first != '>'))
+	if((first>last) || ('>' != *first))
+	{
+		*status = PDS_INVALID_VALUE;
+		return 0;
+	}
+	*end = first+1;
+	return 1;
+}
+
+/*
+ * Parse a quoted symbol.
+ */
+int PDS_parse_symbol(const char *first, const char *last, const char **end, int *status)
+{
+	*end = first;
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+	/* The string must start witn an apostrophe. */
+	if('\'' != *first)
+	{
+		*status = PDS_INVALID_VALUE;
+		return 0;
+	}
+	++first;
+	/* The string must contain at least one valid character. */
+	if((first>=last) || ('\'' == *first))
+	{
+		*status = PDS_INVALID_VALUE;
+		return 0;
+	}
+	/* The string may contain spacing, alpha-numeric, other and special characters except the apostrophe. */
+	for(; (first<=last) && ('\''!=*first) && (('\t'==*first) || ((*first>=0x20) && (*first<=0x7e))); first++)
+	{}
+	
+	if((first>last) || ('\'' != *first))
 	{
 		*status = PDS_INVALID_VALUE;
 		return 0;
