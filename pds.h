@@ -109,24 +109,32 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
  */
 int PDS_parse_unit(const char *first, const char *last, const char **end, int *status);
 /**
- * Parse a quoted symbol.
- * If the parsing was succesfull, the content of the quoted symbol can be retreived from first+1 to 
+ * Parse a literal symbol.
+ * If the parsing was succesfull, the content of the literal value can be retreived from first+1 to 
  * end-1(excluded). 
  * @param [in] first First character of the input string.
  * @param [in] last Last character of the input string.
  * @param [out] end If not null stores the pointer to the first invalid 
  *                  character of the input string.
  * @param [in][out] status Status variable set to PDS_OK if the string contains
- *                         a valid quoted symbol or PDS_INVALID_VALUE.
- * @return 1 if the string contains a valid quoted symbol, 0 if the string is invalid.
+ *                         a valid literal value or PDS_INVALID_VALUE.
+ * @return 1 if the string contains a valid literal symbol, 0 if the string is invalid.
  */
 int PDS_parse_symbol(const char *first, const char *last, const char **end, int *status);
 /**
- *
+ * Parse a quoted string.
+ * If the parsing was succesfull, the content of the quoted text can be retreived from first+1 to 
+ * end-1(excluded). 
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid 
+ *                  character of the input string.
+ * @param [in][out] status Status variable set to PDS_OK if the string contains
+ *                         a valid quoted text or PDS_INVALID_VALUE.
+ * @return 1 if the string contains a valid quoted text, 0 if the string is invalid.
  */
-// [todo] int PDS_parse_string(const char *first, const char *last, const char **end, int *status);
+int PDS_parse_string(const char *first, const char *last, const char **end, int *status);
 
-/* [todo] parse string */
 /* [todo] parse date */
 /* [todo] parse sequence */
 /* [todo] parse set */
@@ -657,10 +665,58 @@ int PDS_parse_symbol(const char *first, const char *last, const char **end, int 
 		return 0;
 	}
 	/* The string may contain spacing, alpha-numeric, other and special characters except the apostrophe. */
-	for(; (first<=last) && ('\''!=*first) && (('\t'==*first) || ((*first>=0x20) && (*first<=0x7e))); first++)
+	for(; (first<last) && ('\''!=*first) && (('\t'==*first) || ((*first>=0x20) && (*first<=0x7e))); first++)
 	{}
 	
 	if((first>last) || ('\'' != *first))
+	{
+		*status = PDS_INVALID_VALUE;
+		return 0;
+	}
+	*end = first+1;
+	return 1;
+}
+/*
+ * Parse a quoted string.
+ */
+int PDS_parse_string(const char *first, const char *last, const char **end, int *status)
+{
+	*end = first;
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+
+	if('"' != *first)
+	{
+		*status = PDS_INVALID_VALUE;
+		return 0;
+	}
+	++first;
+	for(; (first<last) && ('"' != *first) && (PDS_isspace(*first) || ((*first>=0x20) && (*first<=0x7e))); first++)
+	{
+		/* Check escaped character validity. */
+		if('\\' == *first)
+		{
+			++first;
+			if(first < last)
+			{
+				if(   ('n' != *first) && ('t' != *first) && ('f' != *first) 
+				   && ('v' != *first) && ('\\'!= *first) )
+				{
+					*status = PDS_INVALID_VALUE;
+					return 0;
+				}
+			}
+			else
+			{
+				*status = PDS_INVALID_VALUE;
+				return 0;
+			}
+		}
+	}
+
+	if((first>last) || ('"' != *first))
 	{
 		*status = PDS_INVALID_VALUE;
 		return 0;
