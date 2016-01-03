@@ -14,6 +14,41 @@ enum PDS_STATUS
 	PDS_MISSING_SEPARATOR,
 };
 /**
+ * Time types.
+ */
+enum PDS_TIME_TYPE
+{
+	PDS_LOCAL_TIME = 0,
+	PDS_UTC_TIME,
+	PDS_ZONED_TIME
+};
+/**
+ * Date and time structure.
+ */
+typedef struct
+{
+	/** Year in 4 digits form. **/
+	uint16_t year;
+	/** Day of month (number between 1 and 31). **/
+	uint16_t day;
+	/** Month (number between 1 and 12). **/
+	uint8_t month;
+	/** Hour (number between 0 and 23). **/
+	uint8_t hour;
+	/** Minutes (number between 0 and 59). **/
+	uint8_t minute;
+	/** Seconds (number between 0 and 59). **/
+	uint8_t second;
+	/** Microseconds (number between 0 and 999999). **/
+	uint32_t microsecond;
+	/** Hour time offset (number between -12 and 12). **/
+	int8_t hour_offset;
+	/** Minute time offset (number between 0 and 59). **/
+	uint8_t minute_offset;
+	/** Time type @see PDS_TIME_TYPE. **/
+	uint8_t type;
+} PDS_time;
+/**
  * Remove leading and trailing white spaces in a string.
  * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
  * carriage return ('\r'), horizontal tab ('\t') or vertical tab ('\v').
@@ -134,14 +169,26 @@ int PDS_parse_symbol(const char *first, const char *last, const char **end, int 
  * @return 1 if the string contains a valid quoted text, 0 if the string is invalid.
  */
 int PDS_parse_string(const char *first, const char *last, const char **end, int *status);
-
-/* [todo] parse date */
+/**
+ * Parse a date and time.
+ * A date is either a date, a time or a combinate of date and time string.
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid 
+ *                  character of the input string.
+ * @param [out] date Date.
+ * @param [in][out] status Status variable set to PDS_OK if the string contains
+ *                         a valid date or PDS_INVALID_VALUE.
+ * @return 1 if the string contains a valid date, 0 if the string is invalid.
+ */
+int PDS_parse_datetime(const char *first, const char *last, const char **end, PDS_time *date, int *status);
 /* [todo] parse sequence */
 /* [todo] parse set */
 /* [todo] parse assignement */
 /* [todo] parse pointer */
 /* [todo] parse object */
 /* [todo] parse group */
+/* [todo] helper to process quoted string (unescape char and all...). */
 #endif /* PDS_H */
 
 /*****************************************************************************/
@@ -723,6 +770,273 @@ int PDS_parse_string(const char *first, const char *last, const char **end, int 
 	}
 	*end = first+1;
 	return 1;
+}
+/**
+ * Parse date.
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid 
+ *                  character of the input string.
+ * @param [out] date Date.
+ * @param [in][out] status Status variable set to PDS_OK if the string contains
+ *                         a valid date or PDS_INVALID_VALUE.
+ * @return 1 if the string contains a valid date, 0 if the string is invalid.
+ */
+static int parse_date(const char *first, const char *last, const char **end, PDS_time *date, int *status)
+{
+	int32_t value;
+	const char *next = 0;
+	*end = first;
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+	/* Year */
+	value = parse_int(first, last, &next, 10, status);
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+	/* Separator */
+	first = next;
+	if((first >= last) || ('-' != *first))
+	{
+		/* No error is set because this may be a time value. */
+		if(':' != *first)
+		{
+			*status = PDS_INVALID_VALUE;
+		}
+		return 0;
+	}
+	if((value < 1970) || (value > 9999))
+	{
+		*status = PDS_INVALID_RANGE;
+		return 0;
+	}
+	date->year = (uint16_t)value;
+	++first;
+	/* Month or day-of-year. */
+	value = parse_int(first, last, &next, 10, status);
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+	/* If the next character is a date separator (-), we have a month */
+	/* else it's a day-of-year. */ 
+	if('-' == *next)
+	{
+		/* Month */
+		if((value >= 1) && (value <= 12))
+		{
+			date->month= (uint8_t)value;
+			/* Day of month. */
+			value = parse_int(next+1, last, &next, 10, status);
+			if(PDS_OK != *status)
+			{
+				return 0;
+			}
+			if((value >= 1) && (value <= 31))
+			{
+				date->day = (uint16_t)value;
+				*end = next;
+				return 1;
+			}
+		}
+		*status = PDS_INVALID_RANGE;
+		return 0;
+	}
+	else if((value >= 1) && (value <= 366))
+	{
+		/* day-of-year. */
+		date->day   = (uint16_t)value;
+		date->month = 0;
+		*end = next;
+	}
+	else
+	{
+		*status = PDS_INVALID_RANGE;
+		return 0;
+	}
+	return 1;
+}
+/**
+ * Parse time.
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid 
+ *                  character of the input string.
+ * @param [out] date Date.
+ * @param [in][out] status Status variable set to PDS_OK if the string contains
+ *                         a valid date or PDS_INVALID_VALUE.
+ * @return 1 if the string contains a valid date, 0 if the string is invalid.
+ */
+static int parse_time(const char *first, const char *last, const char **end, PDS_time *date, int *status)
+{
+	int32_t value = 0;
+	const char *next = 0;
+
+	*end = first;
+
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+
+	/* Hour. */
+	value = parse_int(first, last, &next, 10, status);
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+	if((value < 0) || (value > 23))
+	{
+		*status = PDS_INVALID_RANGE;
+		return 0;
+	}
+	date->hour = (uint8_t)value;
+	/* Separator. */
+	if(':' != *next)
+	{
+		*status = PDS_INVALID_VALUE;
+		return 0;
+	}
+	/* Minutes. */
+	value = parse_int(next+1, last, &next, 10, status);
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+	if((value < 0) || (value > 59))
+	{
+		*status = PDS_INVALID_RANGE;
+		return 0;
+	}
+	date->minute = (uint8_t)value;
+	/* Seconds? */
+	if(':' == *next)
+	{
+		first = next+1;
+		value = parse_int(next+1, last, &next, 10, status);
+		if('.' == *next)
+		{		
+			int32_t tmp, i;
+			first = next+1;
+			*status = PDS_OK;
+			tmp = parse_int(first, last, &next, 10, status);
+			if(PDS_OK != *status)
+			{
+				return 0;
+			}
+			if((tmp < 0) || (tmp > 999999))
+			{
+				*status = PDS_INVALID_RANGE;
+				return 0;
+			}
+			for(i=(int32_t)(next-first); i<6; i++, tmp*=10)
+			{}
+			date->microsecond = (uint32_t)tmp;
+		}
+		if(PDS_OK != *status)
+		{
+			return 0;
+		}
+		if((value < 0) || (value > 59))
+		{
+			*status = PDS_INVALID_RANGE;
+			return 0;
+		}
+		date->second = (uint8_t)value; 
+	}
+	/* UTC time. */
+	if('Z' == *next)
+	{
+		next++;
+		date->type = PDS_UTC_TIME;
+	}
+	else if(('+' == *next) || ('-' == *next))
+	{
+		date->type = PDS_ZONED_TIME;
+		/* Hour offset. */
+		value = parse_int(next, last, &next, 10, status);
+		if(PDS_OK != *status)
+		{
+			return 0;
+		}
+		if((value < -12) || (value > 12))
+		{
+			*status = PDS_INVALID_RANGE;
+			return 0;
+		}
+		date->hour_offset = (int8_t)value;
+		/* Minute offset? */
+		if(':' == *next)
+		{
+			value = parse_int(next+1, last, &next, 10, status);
+			if(PDS_OK != *status)
+			{
+				return 0;
+			}
+			if((value < 0) || (value > 59))
+			{
+				*status = PDS_INVALID_RANGE;
+				return 0;
+			}
+			date->minute_offset = (int8_t)((date->hour_offset<0) ? -value : value);
+		}
+	}
+	else
+	{
+		date->type = PDS_LOCAL_TIME;
+	}
+
+	*end = next;
+	return 1;
+}
+/*
+ * Parse a date and time.
+ */
+int PDS_parse_datetime(const char *first, const char *last, const char **end, PDS_time *date, int *status)
+{
+	int ret = 0;
+	const char *next = 0;
+
+	date->year = date->month = 0;
+	date->day  = 0;
+	
+	date->hour = date->minute = date->second = 0;
+	date->microsecond = 0;
+	date->hour_offset = date->minute_offset = 0;
+
+	*end = first;
+	
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+
+	ret = parse_date(first, last, &next, date, status);	
+	if(PDS_OK != *status)
+	{
+		return 0;
+	}
+	if(ret)
+	{	
+		if('T' == *next)
+		{
+			++next;
+		}
+		else 
+		{
+			*end = next;
+			return 1;
+		}
+	}
+	ret = parse_time(next, last, &next, date, status);
+	if(PDS_OK == *status)
+	{
+		*end = next;
+	}
+	return ret;
 }
 
 /*****************************************************************************/
