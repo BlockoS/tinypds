@@ -1,7 +1,12 @@
 #ifndef PDS_H
 #define PDS_H
 
+// [todo] some minor configuration stuffs.
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Status values.
@@ -13,6 +18,54 @@ enum PDS_STATUS
     PDS_INVALID_RANGE,
 	PDS_MISSING_SEPARATOR,
 };
+/**
+ * Value types.
+ */
+enum PDS_VALUE_TYPE
+{
+	PDS_UNKNOWN_VALUE = 0,
+	PDS_INTEGER_VALUE,
+	PDS_REAL_VALUE,
+	PDS_DATE_TIME_VALUE,
+	PDS_TEXT_STRING_VALUE,
+	PDS_SYMBOLIC_VALUE
+};
+/**
+ * String.
+ */
+typedef struct
+{
+	/** Value type. Must be equal to PDS_TEXT_STRING_VALUE. **/
+	int type;
+	/** Pointer to the first character of the string. **/
+	const char *first;
+	/** Pointer to the last character of the string. **/
+	const char *last;
+} PDS_string;
+/**
+ * Integer value.
+ */
+typedef struct
+{
+	/** Value type. Must be equal to PDS_INTEGER_VALUE. **/
+	int type;	
+	/** Integer value. **/
+	int32_t integer;
+	/** Measurement unit. **/
+	PDS_string unit;
+} PDS_integer;
+/**
+ * Real value.
+ */
+typedef struct
+{
+	/** Value type. Must be equal to PDS_REAL_VALUE. **/
+	int type;	
+	/** Real (floating-point) value. **/
+	float value;
+	/** Measurement unit. **/
+	PDS_string unit;
+} PDS_real;
 /**
  * Time types.
  */
@@ -27,6 +80,8 @@ enum PDS_TIME_TYPE
  */
 typedef struct
 {
+	/** Value type. Must be equal to PDS_DATE_TIME_VALUE. **/
+	int type;	
 	/** Year in 4 digits form. **/
 	uint16_t year;
 	/** Day of month (number between 1 and 31). **/
@@ -46,8 +101,27 @@ typedef struct
 	/** Minute time offset (number between 0 and 59). **/
 	uint8_t minute_offset;
 	/** Time type @see PDS_TIME_TYPE. **/
-	uint8_t type;
-} PDS_time;
+	uint8_t time_type;
+} PDS_datetime;
+/**
+ * Scalar value.
+ */
+typedef union
+{
+	/** Value type @see PDS_VALUE_TYPE. **/
+	int type;
+	/** Integer value. **/
+	PDS_integer integer;
+	/** Real value. **/
+	PDS_real real;
+	/** Date time. **/
+	PDS_datetime date_time;
+	/** Text string. **/
+	PDS_string text;
+	/** Symbolic literal. **/
+	PDS_string symbolic;
+} PDS_scalar;
+
 /**
  * Remove leading and trailing white spaces in a string.
  * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
@@ -85,110 +159,24 @@ int PDS_string_compare(const char *f0, const char *l0, const char *f1, const cha
  * @return 1 if the strings are equal, 0 otherwise.
  */
 int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, const char *l1);
-/**
- * Parse an integer number.
- * The number can be expressed in decimal or based notation.
- * A based integer is represented by a decimal number representing the base
- * followed by a number expressed in the specified base enclosed between '#'
- * characters.
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid
- *                  character of the input string. 
- * @param [in][out] status Status variable set to PDS_OK if an integer was
- *                  successfully parsed. If an error occured it is set to 
- *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
- * @return Parsed integer. In case of overflow INT32_MAX or (INT32_MIN for a
- * negative value) is returned, and the status variable is set to
- * PDS_INVALID_RANGE. If no conversion was performed, 0 is returned and the
- * status variable is set to PDS_INVALUD_VALUE.
- */
-int32_t PDS_parse_int(const char* first, const char* last, const char** end, int *status);
-/**
- * Parse a floating point value.
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid
- *                  character of the input string. 
- * @param [in] base Base in which the unsigned integer is encoded. The base must
- *                  be in the range 2 to 16. 
- * @param [in][out] status Status variable set to PDS_OK if an integer was
- *                  successfully parsed. If an error occured it is set to 
- *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
- * @return Parsed floating point value. If an error occured or no conversion occured
- * 0.0 is returned.
- */
-double PDS_parse_real(const char *first, const char *last, const char **end, int *status);
-/**
- * Parse identifier. 
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid 
- *                  character of the input string.
- * @param [in][out] status Status variable set to PDS_OK if the string contains
- *                         a valid identifier or PDS_INVALID_VALUE.
- * @return Pointer to the beginning of the identifier or 0 if the string is invalid.
- */
-const char* PDS_parse_identifier(const char *first, const char *last, const char **end, int *status);
-/**
- * Parse measurement unit.
- * If the parsing was succesfull, the content of the measurement string can be retreived from first+1 to 
- * end-1(excluded). 
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid 
- *                  character of the input string.
- * @param [in][out] status Status variable set to PDS_OK if the string contains
- *                         a valid unit or PDS_INVALID_VALUE.
- * @return 1 if a valid unit was parsed, 0 if the string is invalid.
- */
-int PDS_parse_unit(const char *first, const char *last, const char **end, int *status);
-/**
- * Parse a literal symbol.
- * If the parsing was succesfull, the content of the literal value can be retreived from first+1 to 
- * end-1(excluded). 
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid 
- *                  character of the input string.
- * @param [in][out] status Status variable set to PDS_OK if the string contains
- *                         a valid literal value or PDS_INVALID_VALUE.
- * @return 1 if the string contains a valid literal symbol, 0 if the string is invalid.
- */
-int PDS_parse_symbol(const char *first, const char *last, const char **end, int *status);
-/**
- * Parse a quoted string.
- * If the parsing was succesfull, the content of the quoted text can be retreived from first+1 to 
- * end-1(excluded). 
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid 
- *                  character of the input string.
- * @param [in][out] status Status variable set to PDS_OK if the string contains
- *                         a valid quoted text or PDS_INVALID_VALUE.
- * @return 1 if the string contains a valid quoted text, 0 if the string is invalid.
- */
-int PDS_parse_string(const char *first, const char *last, const char **end, int *status);
-/**
- * Parse a date and time.
- * A date is either a date, a time or a combinate of date and time string.
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid 
- *                  character of the input string.
- * @param [out] date Date.
- * @param [in][out] status Status variable set to PDS_OK if the string contains
- *                         a valid date or PDS_INVALID_VALUE.
- * @return 1 if the string contains a valid date, 0 if the string is invalid.
- */
-int PDS_parse_datetime(const char *first, const char *last, const char **end, PDS_time *date, int *status);
-/* [todo] parse sequence */
+
+
+/* [todo] all-in-one value parser */
 /* [todo] parse set */
+/* [todo] parse sequence */
+
 /* [todo] parse assignement */
-/* [todo] parse pointer */
-/* [todo] parse object */
-/* [todo] parse group */
-/* [todo] helper to process quoted string (unescape char and all...). */
+/* [todo] parse pointer (rhs) */
+/* [todo] parse object (rhs) */
+/* [todo] parse group (rhs) */
+
+/* [todo] parser callback set */
+/* [todo] parser run */
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* PDS_H */
 
 /*****************************************************************************/
@@ -227,7 +215,6 @@ enum PDS_TOKEN_TYPE
 	PDS_TOKEN_GROUP,
 	PDS_TOKEN_OBJECT,
 };
-// [todo] subtype/flags
 /**
  * PDS token.
  */
@@ -239,10 +226,11 @@ typedef struct
 	const char *last;
 	/** Token type (@see PDS_TOKEN_TYPE). **/
 	int type;
-	// [todo] subtype/flags
+	/** Flag (begin/end, ...). **/
+	int flag;
 } PDS_token;
 /**
- * [todo]
+ * PSD parser.
  */
 typedef struct
 {
@@ -258,8 +246,52 @@ typedef struct
 	int line;
 	/** Last valid line. **/
 	int last_line;
-	/* [todo] callbacks + userdata */
+
+	// [todo] scratchpad mem
+
+	/** Current token. **/
+	PDS_token token;
+	/** Current scalar value. **/
+	PDS_scalar scalar;
+	/** User data. **/
+	void *user_data;
+	/** New attribute callback. **/
+	int (*attribute) (const char *id, const PDS_scalar *scalar, void *user_data);
+
+	// int (*pointer) (const char *id, const PDS_value *value, void *user_data);
+
+	// int (*set_begin) (const char *id, int element_count, void *user_data);
+	// int (*set_element) (const PDS_scalar *scalar, void *user_data);
+	// [todo] set_end
+	
+	// int (*sequence_begin) (const char *id, int element_count, void *user_data);
+	// int (*sequence_element) (const PDS_scalar *scalar, void *user_data);
+	// [todo] sequence_end
+
+	// int (*group_begin) (const char *id, void *user_data);
+	// int (*group_end) (const char *id, void *user_data);
+
+	// int (*object_begin) (const char *id, void *user_data);
+	// int (*object_end) (const char *id, void *user_data);
+	
+	/** Display error message. **/
+	void (*error)(int line, const char *text, void *user_data);
 } PDS_parser;
+
+/**
+ * Set error and run error display callback.
+ * @param [in][out] parser Parser.
+ * @param [in]      error Error status @see PDS_STATUS.
+ * @param [in]      message Error message.
+ */
+static void PDS_error(PDS_parser *parser, int error, const char *message)
+{
+	parser->status = error;
+	if(0 != parser->error)
+	{
+		parser->error(parser->line, message, parser->user_data);
+	}
+}
 
 /*****************************************************************************/
 
@@ -411,10 +443,25 @@ static int32_t parse_int(const char *first, const char *last, const char **end, 
         return (int32_t)(neg ? -accumulator : accumulator);
     }
 }
-/*
+/**
  * Parse an integer number.
+ * The number can be expressed in decimal or based notation.
+ * A based integer is represented by a decimal number representing the base
+ * followed by a number expressed in the specified base enclosed between '#'
+ * characters.
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid
+ *                  character of the input string. 
+ * @param [in][out] status Status variable set to PDS_OK if an integer was
+ *                  successfully parsed. If an error occured it is set to 
+ *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
+ * @return Parsed integer. In case of overflow INT32_MAX or (INT32_MIN for a
+ * negative value) is returned, and the status variable is set to
+ * PDS_INVALID_RANGE. If no conversion was performed, 0 is returned and the
+ * status variable is set to PDS_INVALUD_VALUE.
  */
-int32_t PDS_parse_int(const char* first, const char* last, const char** end, int *status)
+static int32_t PDS_parse_int(const char* first, const char* last, const char** end, int *status)
 {
     const char *ptr;
     int32_t value;
@@ -466,10 +513,21 @@ int32_t PDS_parse_int(const char* first, const char* last, const char** end, int
     }
     return value;
 }
-/*
+/**
  * Parse a floating point value.
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid
+ *                  character of the input string. 
+ * @param [in] base Base in which the unsigned integer is encoded. The base must
+ *                  be in the range 2 to 16. 
+ * @param [in][out] status Status variable set to PDS_OK if an integer was
+ *                  successfully parsed. If an error occured it is set to 
+ *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
+ * @return Parsed floating point value. If an error occured or no conversion occured
+ * 0.0 is returned.
  */
-double PDS_parse_real(const char *first, const char *last, const char **end, int *status) 
+static double PDS_parse_real(const char *first, const char *last, const char **end, int *status) 
 {
     double value;
     int neg = 0;
@@ -559,10 +617,17 @@ double PDS_parse_real(const char *first, const char *last, const char **end, int
     *end = ptr;
     return value;   
 }
-/*
+/**
  * Parse identifier. 
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid 
+ *                  character of the input string.
+ * @param [in][out] status Status variable set to PDS_OK if the string contains
+ *                         a valid identifier or PDS_INVALID_VALUE.
+ * @return Pointer to the beginning of the identifier or 0 if the string is invalid.
  */
-const char* PDS_parse_identifier(const char *first, const char *last, const char **end, int *status)
+static const char* PDS_parse_identifier(const char *first, const char *last, const char **end, int *status)
 {
 	const char *ptr;
 	char c, previous;
@@ -612,10 +677,19 @@ const char* PDS_parse_identifier(const char *first, const char *last, const char
 	*status = PDS_INVALID_VALUE;
 	return 0;
 }
-/*
- * Parse a measurement unit. 
+/**
+ * Parse measurement unit.
+ * If the parsing was succesfull, the content of the measurement string can be retreived from first+1 to 
+ * end-1(excluded). 
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid 
+ *                  character of the input string.
+ * @param [in][out] status Status variable set to PDS_OK if the string contains
+ *                         a valid unit or PDS_INVALID_VALUE.
+ * @return 1 if a valid unit was parsed, 0 if the string is invalid.
  */
-int PDS_parse_unit(const char *first, const char *last, const char **end, int *status)
+static int PDS_parse_unit(const char *first, const char *last, const char **end, int *status)
 {
 	*end = first;
 	if(PDS_OK != *status)
@@ -687,11 +761,19 @@ int PDS_parse_unit(const char *first, const char *last, const char **end, int *s
 	*end = first+1;
 	return 1;
 }
-
-/*
- * Parse a quoted symbol.
+/**
+ * Parse a literal symbol.
+ * If the parsing was succesfull, the content of the literal value can be retreived from first+1 to 
+ * end-1(excluded). 
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid 
+ *                  character of the input string.
+ * @param [in][out] status Status variable set to PDS_OK if the string contains
+ *                         a valid literal value or PDS_INVALID_VALUE.
+ * @return 1 if the string contains a valid literal symbol, 0 if the string is invalid.
  */
-int PDS_parse_symbol(const char *first, const char *last, const char **end, int *status)
+static int PDS_parse_symbol(const char *first, const char *last, const char **end, int *status)
 {
 	*end = first;
 	if(PDS_OK != *status)
@@ -723,23 +805,30 @@ int PDS_parse_symbol(const char *first, const char *last, const char **end, int 
 	*end = first+1;
 	return 1;
 }
-/*
+/**
  * Parse a quoted string.
+ * If the parsing was succesfull, the content of the quoted text can be retreived from first+1 to 
+ * end-1(excluded). 
+ * @param [in][out] parser Parser.
+ * @return 1 if the string contains a valid quoted text, 0 if the string is invalid.
  */
-int PDS_parse_string(const char *first, const char *last, const char **end, int *status)
+static int PDS_parse_string(PDS_parser *parser)
 {
-	*end = first;
-	if(PDS_OK != *status)
+	const char *first = parser->current;
+	const char *last  = parser->last;
+	if(PDS_OK != parser->status)
 	{
 		return 0;
 	}
 
-	if('"' != *first)
+	if('"' != *first++)
 	{
-		*status = PDS_INVALID_VALUE;
+		PDS_error(parser, PDS_INVALID_VALUE, "invalid or missing string delimiter");
 		return 0;
 	}
-	++first;
+
+	parser->scalar.text.first = first;
+
 	for(; (first<last) && ('"' != *first) && (PDS_isspace(*first) || ((*first>=0x20) && (*first<=0x7e))); first++)
 	{
 		/* Check escaped character validity. */
@@ -751,24 +840,27 @@ int PDS_parse_string(const char *first, const char *last, const char **end, int 
 				if(   ('n' != *first) && ('t' != *first) && ('f' != *first) 
 				   && ('v' != *first) && ('\\'!= *first) )
 				{
-					*status = PDS_INVALID_VALUE;
+					PDS_error(parser, PDS_INVALID_VALUE, "invalid escape character");
 					return 0;
 				}
 			}
-			else
-			{
-				*status = PDS_INVALID_VALUE;
-				return 0;
-			}
 		}
+		else if('\n' == *first)
+		{
+			++parser->line;
+		} 
 	}
-
+	
 	if((first>last) || ('"' != *first))
 	{
-		*status = PDS_INVALID_VALUE;
+		PDS_error(parser, PDS_INVALID_VALUE, "missing string delimiter");
 		return 0;
 	}
-	*end = first+1;
+	
+	parser->scalar.type = PDS_TEXT_STRING_VALUE;
+	parser->scalar.text.last  = first;
+ 
+	parser->current = first+1;
 	return 1;
 }
 /**
@@ -782,7 +874,7 @@ int PDS_parse_string(const char *first, const char *last, const char **end, int 
  *                         a valid date or PDS_INVALID_VALUE.
  * @return 1 if the string contains a valid date, 0 if the string is invalid.
  */
-static int parse_date(const char *first, const char *last, const char **end, PDS_time *date, int *status)
+static int parse_date(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
 {
 	int32_t value;
 	const char *next = 0;
@@ -870,7 +962,7 @@ static int parse_date(const char *first, const char *last, const char **end, PDS
  *                         a valid date or PDS_INVALID_VALUE.
  * @return 1 if the string contains a valid date, 0 if the string is invalid.
  */
-static int parse_time(const char *first, const char *last, const char **end, PDS_time *date, int *status)
+static int parse_time(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
 {
 	int32_t value = 0;
 	const char *next = 0;
@@ -951,11 +1043,11 @@ static int parse_time(const char *first, const char *last, const char **end, PDS
 	if('Z' == *next)
 	{
 		next++;
-		date->type = PDS_UTC_TIME;
+		date->time_type = PDS_UTC_TIME;
 	}
 	else if(('+' == *next) || ('-' == *next))
 	{
-		date->type = PDS_ZONED_TIME;
+		date->time_type = PDS_ZONED_TIME;
 		/* Hour offset. */
 		value = parse_int(next, last, &next, 10, status);
 		if(PDS_OK != *status)
@@ -986,16 +1078,25 @@ static int parse_time(const char *first, const char *last, const char **end, PDS
 	}
 	else
 	{
-		date->type = PDS_LOCAL_TIME;
+		date->time_type = PDS_LOCAL_TIME;
 	}
 
 	*end = next;
 	return 1;
 }
-/*
+/**
  * Parse a date and time.
+ * A date is either a date, a time or a combinate of date and time string.
+ * @param [in] first First character of the input string.
+ * @param [in] last Last character of the input string.
+ * @param [out] end If not null stores the pointer to the first invalid 
+ *                  character of the input string.
+ * @param [out] date Date.
+ * @param [in][out] status Status variable set to PDS_OK if the string contains
+ *                         a valid date or PDS_INVALID_VALUE.
+ * @return 1 if the string contains a valid date, 0 if the string is invalid.
  */
-int PDS_parse_datetime(const char *first, const char *last, const char **end, PDS_time *date, int *status)
+static int PDS_parse_datetime(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
 {
 	int ret = 0;
 	const char *next = 0;
@@ -1006,6 +1107,8 @@ int PDS_parse_datetime(const char *first, const char *last, const char **end, PD
 	date->hour = date->minute = date->second = 0;
 	date->microsecond = 0;
 	date->hour_offset = date->minute_offset = 0;
+
+	date->time_type = PDS_LOCAL_TIME;
 
 	*end = first;
 	
@@ -1038,9 +1141,45 @@ int PDS_parse_datetime(const char *first, const char *last, const char **end, PD
 	}
 	return ret;
 }
+/**
+ * [todo]
+ */
+static int PDS_parse_set(const char *first, const char *last, const char **end, /*[todo] parser, */int *status)
+{
+	return 1;
+}
+/**
+ * [todo]
+ */
+static int PDS_parse_sequence(const char *first, const char *last, const char **end, /* [todo] parser, */ int *status)
+{
+	return 1;
+}
+/**
+ * [todo]
+ */
+static int PDS_parse_statement(PDS_parser *parser, int *status)
+{
+	// skip_whitespace
+	// parse_lhs
+	// skip_whitespace
+	// check for equal sign
+	// skip_whitespace
+	// switch(type)
+	//		case begin/end_object: parse identifier
+	//		case begin/end_group: parse identifier
+	//		case pointer : parse ?
+	//		case attribute : check first character
+	//							( => sequence
+	//							{ => set
+	//							" => quote
+	//							' => symbolic literal
+	//							-/+/[0-9] => scalar value
+	//							[a-zA-Z] => identifier
+	return 1;
+}
 
 /*****************************************************************************/
-
 /**
  * Parse pointer identifier.
  * @param [in][out] lhs Token to be parsed.
@@ -1133,7 +1272,7 @@ static int parse_lhs_attribute(PDS_token *lhs, int *status)
  * group       := 'begin_group' | 'end_group'
  * object      := 'begin_object' | 'end_object'
  * pointer     := ^identifier
- * @param [in][out] token [todo].
+ !* @param [in][out] token [todo].
  * @param [in][out] status Status variable set to PDS_OK if an integer was
  *                  successfully parsed. If an error occured it is set to 
  *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
@@ -1193,9 +1332,7 @@ static int parse_lhs(PDS_token *lhs, int *status)
 	}
 	return 0;
 }
-
 /*****************************************************************************/
-
 /**
  * Skip whitespaces and comments from string.
  * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),

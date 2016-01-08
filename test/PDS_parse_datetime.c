@@ -7,22 +7,22 @@
 typedef struct
 {
 	int ret;
-	PDS_time t;
+	PDS_datetime t;
 } expected_t;
 
 int main()
 {
 	static const expected_t values[] =
 	{
-		{ 1, {1977, 24, 7, 0, 0, 0,     0, 0,  0, PDS_LOCAL_TIME } },
-		{ 1, {1985,320, 0, 0, 0, 0,     0, 0,  0, PDS_LOCAL_TIME } },
-		{ 1, {   0,  0, 0,12, 7,31,     0, 0,  0, PDS_LOCAL_TIME } },
-		{ 1, {   0,  0, 0, 8,15, 1,  2450,-8,-15, PDS_ZONED_TIME } },
-		{ 1, {2015, 14, 7,11,49,57,     0, 0,  0, PDS_LOCAL_TIME } },
-		{ 1, {2016,  3, 1,18,21,49,129900, 2, 10, PDS_ZONED_TIME } },
-		{ 1, {1977,  5, 9,12,56, 0,     0, 0,  0, PDS_UTC_TIME   } },
-		{ 1, {1997, 15,10, 8,43, 0,     0, 1,  0, PDS_ZONED_TIME } },
-		{ 0, {   0,  0, 0, 0, 0, 0,     0, 0,  0, PDS_LOCAL_TIME } },	
+		{ 1, {0,1977, 24, 7, 0, 0, 0,     0, 0,  0, PDS_LOCAL_TIME } },
+		{ 1, {0,1985,320, 0, 0, 0, 0,     0, 0,  0, PDS_LOCAL_TIME } },
+		{ 1, {0,   0,  0, 0,12, 7,31,     0, 0,  0, PDS_LOCAL_TIME } },
+		{ 1, {0,   0,  0, 0, 8,15, 1,  2450,-8,-15, PDS_ZONED_TIME } },
+		{ 1, {0,2015, 14, 7,11,49,57,     0, 0,  0, PDS_LOCAL_TIME } },
+		{ 1, {0,2016,  3, 1,18,21,49,129900, 2, 10, PDS_ZONED_TIME } },
+		{ 1, {0,1977,  5, 9,12,56, 0,     0, 0,  0, PDS_UTC_TIME   } },
+		{ 1, {0,1997, 15,10, 8,43, 0,     0, 1,  0, PDS_ZONED_TIME } },
+		{ 0, {0,   0,  0, 0, 0, 0, 0,     0, 0,  0, PDS_LOCAL_TIME } },	
 	};
 
     begin_test_data(expected_t)
@@ -50,8 +50,8 @@ int main()
         const char *last  = first + strlen(first) - 1;
         const char *end   = 0;
 		int status = PDS_OK;
-        PDS_time t;
-
+        PDS_datetime t;
+		
 		int ret = PDS_parse_datetime(first, last, &end, &t, &status);
 		
 		check(test_expected(i).ret == ret);
@@ -68,7 +68,7 @@ int main()
 			check(test_expected(i).t.microsecond == t.microsecond);
 			check(test_expected(i).t.hour_offset == t.hour_offset);
 			check(test_expected(i).t.minute_offset == t.minute_offset);
-			check(test_expected(i).t.type == t.type);
+			check(test_expected(i).t.time_type == t.time_type);
 		}
     }
     return EXIT_SUCCESS;
