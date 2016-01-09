@@ -43,32 +43,37 @@ int main()
         test_data( "1977-12-24T07:15:00+12:75   ",  0, values[8], PDS_INVALID_RANGE ),
     end_test_data()
 
+	PDS_parser parser;
+	parser.error = dummy_error;
+
 	int i;
     test_foreach(i)
 	{
-        const char *first = test_str(i);
-        const char *last  = first + strlen(first) - 1;
-        const char *end   = 0;
-		int status = PDS_OK;
-        PDS_datetime t;
+		parser.line    = 1;
+        parser.first   = test_str(i);
+        parser.last    = parser.first + strlen(parser.first) - 1;
+        parser.current = parser.first;
+		parser.status  = PDS_OK;
 		
-		int ret = PDS_parse_datetime(first, last, &end, &t, &status);
+		int ret = PDS_parse_datetime(&parser);
 		
 		check(test_expected(i).ret == ret);
-        check(test_end(i) == end);
-        check(test_status(i) == status);
+        check(test_end(i) == parser.current);
+        check(test_status(i) == parser.status);
 		if(ret)
 		{
-			check(test_expected(i).t.year == t.year);
-			check(test_expected(i).t.day == t.day);
-			check(test_expected(i).t.month == t.month);
-			check(test_expected(i).t.hour == t.hour);
-			check(test_expected(i).t.minute == t.minute);
-			check(test_expected(i).t.second == t.second);
-			check(test_expected(i).t.microsecond == t.microsecond);
-			check(test_expected(i).t.hour_offset == t.hour_offset);
-			check(test_expected(i).t.minute_offset == t.minute_offset);
-			check(test_expected(i).t.time_type == t.time_type);
+			PDS_datetime *date_time = &parser.scalar.date_time;
+			check(PDS_DATE_TIME_VALUE == parser.scalar.type);
+			check(test_expected(i).t.year == date_time->year);
+			check(test_expected(i).t.day == date_time->day);
+			check(test_expected(i).t.month == date_time->month);
+			check(test_expected(i).t.hour == date_time->hour);
+			check(test_expected(i).t.minute == date_time->minute);
+			check(test_expected(i).t.second == date_time->second);
+			check(test_expected(i).t.microsecond == date_time->microsecond);
+			check(test_expected(i).t.hour_offset == date_time->hour_offset);
+			check(test_expected(i).t.minute_offset == date_time->minute_offset);
+			check(test_expected(i).t.time_type == date_time->time_type);
 		}
     }
     return EXIT_SUCCESS;

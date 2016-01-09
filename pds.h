@@ -1099,20 +1099,16 @@ static int parse_time(const char *first, const char *last, const char **end, PDS
 /**
  * Parse a date and time.
  * A date is either a date, a time or a combinate of date and time string.
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid 
- *                  character of the input string.
- * @param [out] date Date.
- * @param [in][out] status Status variable set to PDS_OK if the string contains
- *                         a valid date or PDS_INVALID_VALUE.
+ * @param [in][out] parser Parser.
  * @return 1 if the string contains a valid date, 0 if the string is invalid.
  */
-// [todo] replace args by parser
-static int PDS_parse_datetime(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
+static int PDS_parse_datetime(PDS_parser *parser)
 {
 	int ret = 0;
 	const char *next = 0;
+
+	PDS_datetime *date = &parser->scalar.date_time;
+	parser->scalar.type = PDS_UNKNOWN_VALUE;
 
 	date->year = date->month = 0;
 	date->day  = 0;
@@ -1122,17 +1118,15 @@ static int PDS_parse_datetime(const char *first, const char *last, const char **
 	date->hour_offset = date->minute_offset = 0;
 
 	date->time_type = PDS_LOCAL_TIME;
-
-	*end = first;
 	
-	if(PDS_OK != *status)
+	if(PDS_OK != parser->status)
 	{
 		return 0;
 	}
-
-	ret = parse_date(first, last, &next, date, status);	
-	if(PDS_OK != *status)
+	ret = parse_date(parser->current, parser->last, &next, date, &parser->status);	
+	if(PDS_OK != parser->status)
 	{
+		PDS_error(parser, parser->status, "invalid date");
 		return 0;
 	}
 	if(ret)
@@ -1143,14 +1137,20 @@ static int PDS_parse_datetime(const char *first, const char *last, const char **
 		}
 		else 
 		{
-			*end = next;
+			parser->scalar.type = PDS_DATE_TIME_VALUE;
+			parser->current = next;
 			return 1;
 		}
 	}
-	ret = parse_time(next, last, &next, date, status);
-	if(PDS_OK == *status)
+	ret = parse_time(next, parser->last, &next, date, &parser->status);
+	if(PDS_OK == parser->status)
 	{
-		*end = next;
+		parser->scalar.type = PDS_DATE_TIME_VALUE;
+		parser->current = next;
+	}
+	else
+	{
+		PDS_error(parser, parser->status, "invalid time");	
 	}
 	return ret;
 }
