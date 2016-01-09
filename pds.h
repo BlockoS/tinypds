@@ -50,10 +50,10 @@ typedef struct
 {
 	/** Value type. Must be equal to PDS_INTEGER_VALUE. **/
 	int type;	
-	/** Integer value. **/
-	int32_t integer;
 	/** Measurement unit. **/
 	PDS_string unit;
+	/** Integer value. **/
+	int32_t value;
 } PDS_integer;
 /**
  * Real value.
@@ -62,10 +62,10 @@ typedef struct
 {
 	/** Value type. Must be equal to PDS_REAL_VALUE. **/
 	int type;	
-	/** Real (floating-point) value. **/
-	float value;
 	/** Measurement unit. **/
 	PDS_string unit;
+	/** Real (floating-point) value. **/
+	float value;
 } PDS_real;
 /**
  * Time types.
@@ -691,39 +691,36 @@ static const char* PDS_parse_identifier(const char *first, const char *last, con
  * Parse measurement unit.
  * If the parsing was succesfull, the content of the measurement string can be retreived from first+1 to 
  * end-1(excluded). 
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid 
- *                  character of the input string.
- * @param [in][out] status Status variable set to PDS_OK if the string contains
- *                         a valid unit or PDS_INVALID_VALUE.
+ * @param [in][out] parser Parser.
  * @return 1 if a valid unit was parsed, 0 if the string is invalid.
  */
-// [todo] replace args by parser
-static int PDS_parse_unit(const char *first, const char *last, const char **end, int *status)
+static int PDS_parse_unit(PDS_parser *parser)
 {
-	*end = first;
-	if(PDS_OK != *status)
+	const char *first = parser->current;
+	if(   (PDS_OK != parser->status)
+	   || ((PDS_INTEGER_VALUE != parser->scalar.type) && (PDS_REAL_VALUE != parser->scalar.type)) )
 	{
 		return 0;
 	}
 	if('<' != *first)
 	{
-		*status = PDS_INVALID_VALUE;
+		PDS_error(parser, PDS_INVALID_VALUE, "invalid unit delimiter");
 		return 0;
 	}
 	++first;
-	if(first >= last)
+	if(first >= parser->last)
 	{
+		parser->current = first;
 		return 0;
 	}
-	while(first<last)
+	parser->scalar.integer.unit.first = first;	
+	while(first<parser->last)
 	{
 		/* unit factor */
-		for(; (first<last) && (PDS_isalpha(*first) || ('_'==*first)); first++)
+		for(; (first<parser->last) && (PDS_isalpha(*first) || ('_'==*first)); first++)
 		{}
 		/* Check for multiplier, exponent or divisor. */
-		if(first < last)
+		if(first < parser->last)
 		{
 			if('*' == *first)
 			{
@@ -731,16 +728,17 @@ static int PDS_parse_unit(const char *first, const char *last, const char **end,
 				if('*' == *first)
 				{
 					const char *next = 0;
-					(void)parse_int(first+1, last, &next, 10, status);
-					if(PDS_OK != *status)
+					(void)parse_int(first+1, parser->last, &next, 10, &parser->status);
+					if(PDS_OK != parser->status)
 					{
+						PDS_error(parser, parser->status, "invalid unit exponent");
 						return 0;
 					}
 					first = next;
 				}
 				else if(!PDS_isalpha(*first))
 				{
-					*status = PDS_INVALID_VALUE;
+					PDS_error(parser, PDS_INVALID_VALUE, "invalid unit");
 					return 0;
 				}
 			}
@@ -749,7 +747,7 @@ static int PDS_parse_unit(const char *first, const char *last, const char **end,
 				++first;
 				if(!PDS_isalpha(*first))
 				{
-					*status = PDS_INVALID_VALUE;
+					PDS_error(parser, PDS_INVALID_VALUE, "invalid unit divisor");
 					return 0;
 				}
 			}
@@ -759,17 +757,18 @@ static int PDS_parse_unit(const char *first, const char *last, const char **end,
 			}
 			else
 			{
-				*status = PDS_INVALID_VALUE;
+				PDS_error(parser, PDS_INVALID_VALUE, "unauthorized unit character");
 				return 0;
 			}
 		}
 	}
-	if((first>last) || ('>' != *first))
+	if((first>parser->last) || ('>' != *first))
 	{
-		*status = PDS_INVALID_VALUE;
+		PDS_error(parser, PDS_INVALID_VALUE, "missing or invalid unit delimiter");
 		return 0;
 	}
-	*end = first+1;
+	parser->scalar.integer.unit.last = first;
+	parser->current = first+1;
 	return 1;
 }
 /**
@@ -973,7 +972,6 @@ static int parse_date(const char *first, const char *last, const char **end, PDS
  *                         a valid date or PDS_INVALID_VALUE.
  * @return 1 if the string contains a valid date, 0 if the string is invalid.
  */
-// [todo] replace args by parser
 static int parse_time(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
 {
 	int32_t value = 0;
