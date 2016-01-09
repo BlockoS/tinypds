@@ -17,7 +17,7 @@ enum PDS_STATUS
     PDS_OK = 0,
     PDS_INVALID_VALUE,
     PDS_INVALID_RANGE,
-	PDS_MISSING_SEPARATOR,
+	PDS_INVALID_ARGUMENT,
 };
 /**
  * Value types.
@@ -29,7 +29,8 @@ enum PDS_VALUE_TYPE
 	PDS_REAL_VALUE,
 	PDS_DATE_TIME_VALUE,
 	PDS_TEXT_STRING_VALUE,
-	PDS_SYMBOLIC_VALUE
+	PDS_SYMBOLIC_VALUE,
+	PDS_IDENTIFIER_VALUE
 };
 /**
  * String.
@@ -121,6 +122,8 @@ typedef union
 	PDS_string text;
 	/** Symbolic literal. **/
 	PDS_string symbolic;
+	/** Identifier. **/
+	PDS_string identifier;
 } PDS_scalar;
 
 /**
@@ -457,70 +460,65 @@ static int32_t parse_int(const char *first, const char *last, const char **end, 
  * A based integer is represented by a decimal number representing the base
  * followed by a number expressed in the specified base enclosed between '#'
  * characters.
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid
- *                  character of the input string. 
- * @param [in][out] status Status variable set to PDS_OK if an integer was
- *                  successfully parsed. If an error occured it is set to 
- *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
+ * @param [in][out] parser Parser.
  * @return Parsed integer. In case of overflow INT32_MAX or (INT32_MIN for a
  * negative value) is returned, and the status variable is set to
  * PDS_INVALID_RANGE. If no conversion was performed, 0 is returned and the
  * status variable is set to PDS_INVALUD_VALUE.
  */
-// [todo] replace args by parser
-static int32_t PDS_parse_int(const char* first, const char* last, const char** end, int *status)
+static int32_t PDS_parse_int(PDS_parser *parser)
 {
     const char *ptr;
-    int32_t value;
+	int32_t value;
     /* Sanity check. */
-    if(PDS_OK != *status)
+    if(PDS_OK != parser->status)
     {
-        return INT32_MAX;
+        return 0;
     }
-    if(0 == end)
-    {
-        *status = PDS_INVALID_VALUE;
-        return INT32_MAX;   
-    }
-    *end = first;
     /* Parse value. */
-    value = parse_int(first, last, &ptr, 10, status);
-    if(PDS_OK != *status)
+    value = parse_int(parser->current, parser->last, &ptr, 10, &parser->status);
+    if(PDS_OK != parser->status)
     {
-        return INT32_MAX;
+		PDS_error(parser, parser->status, "invalid integer value");
+        return 0;
     }
     /* 
      * If the character following the current number is a '#', this may mean
      * that the number is in fact expressed in based notation.
      */
-    if((ptr >= last) || (*ptr != '#'))
+    if((ptr < parser->last) && (*ptr == '#'))
     {
-        *end = ptr;
-        return value;
-    }
-    if((value < 2) || (value > 16))
-    {
-        *status = PDS_INVALID_RANGE;
-        return INT32_MAX;
-    }
-    ++ptr;
-    value = parse_int(ptr, last, end, value, status);
-    if(PDS_OK == *status)
-    {
-        /* Check that the number is followed by a closing '#'. */
-        if('#' != **end)
-        {
-            *status = PDS_INVALID_VALUE;
-            value = INT32_MAX;
-        }
-        else
-        {
-            ++*end;
-        }
-    }
-    return value;
+		if((value < 2) || (value > 16))
+	    {
+			PDS_error(parser, PDS_INVALID_RANGE, "invalid integer base");
+			return 0;
+		}
+		const char *current = ptr+1;
+		value = parse_int(current, parser->last, &ptr, value, &parser->status);
+		if(PDS_OK == parser->status)
+		{
+			/* Check that the number is followed by a closing '#'. */
+			if('#' != *ptr)
+			{
+				PDS_error(parser, PDS_INVALID_VALUE, "invalid of missing delimiter");
+				return 0;
+			}
+			else
+			{
+				++ptr;
+			}
+		}
+		else
+		{
+			PDS_error(parser, parser->status, "invalid integer value");
+			return 0;
+		}
+	}
+	parser->current = ptr;
+	parser->scalar.type = PDS_INTEGER_VALUE;
+	parser->scalar.integer.value = value;
+	parser->scalar.integer.unit.first = parser->scalar.integer.unit.last = 0;
+    return 1;
 }
 /**
  * Parse a floating point value.
@@ -697,9 +695,13 @@ static const char* PDS_parse_identifier(const char *first, const char *last, con
 static int PDS_parse_unit(PDS_parser *parser)
 {
 	const char *first = parser->current;
-	if(   (PDS_OK != parser->status)
-	   || ((PDS_INTEGER_VALUE != parser->scalar.type) && (PDS_REAL_VALUE != parser->scalar.type)) )
+	if(PDS_OK != parser->status)
 	{
+		return 0;
+	}
+	if((PDS_INTEGER_VALUE != parser->scalar.type) && (PDS_REAL_VALUE != parser->scalar.type))
+	{
+		PDS_error(parser, PDS_INVALID_ARGUMENT, "invalid argument");
 		return 0;
 	}
 	if('<' != *first)
@@ -1107,6 +1109,10 @@ static int PDS_parse_datetime(PDS_parser *parser)
 
 	PDS_datetime *date = &parser->scalar.date_time;
 	parser->scalar.type = PDS_UNKNOWN_VALUE;
+	if(PDS_OK != parser->status)
+	{
+		return 0;
+	}
 
 	date->year = date->month = 0;
 	date->day  = 0;
@@ -1117,10 +1123,6 @@ static int PDS_parse_datetime(PDS_parser *parser)
 
 	date->time_type = PDS_LOCAL_TIME;
 	
-	if(PDS_OK != parser->status)
-	{
-		return 0;
-	}
 	ret = parse_date(parser->current, parser->last, &next, date, &parser->status);	
 	if(PDS_OK != parser->status)
 	{

@@ -16,19 +16,26 @@ int main()
         test_data(       "4##", 2,         0, PDS_INVALID_VALUE ),
     end_test_data()
 
+	PDS_parser parser;
+	parser.error = dummy_error;
+
 	int i;
     test_foreach(i)
 	{
-        const char *first = test_str(i);
-        const char *last  = first + strlen(first) - 1;
-        const char *end   = 0;
-		int status = PDS_OK;
+		parser.line    = 1;
+        parser.first   = test_str(i);
+        parser.last    = parser.first + strlen(parser.first) - 1;
+        parser.current = parser.first;
+		parser.status  = PDS_OK;
         
-		int32_t value = PDS_parse_int(first, last, &end, &status);
-        
-		check(test_expected(i) == value);
-        check(test_end(i) == end);
-        check(test_status(i) == status);
-    }
+		int ret = PDS_parse_int(&parser);
+        check(test_status(i) == parser.status);
+        if(ret)
+		{
+			check(test_end(i) == parser.current);
+			check(PDS_INTEGER_VALUE == parser.scalar.type);
+			check(test_expected(i) == parser.scalar.integer.value);
+		}
+	}
     return EXIT_SUCCESS;
 }
