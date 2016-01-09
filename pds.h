@@ -2,6 +2,7 @@
 #define PDS_H
 
 // [todo] some minor configuration stuffs.
+// [todo] replace char by int8
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -131,6 +132,7 @@ typedef union
  * @param [out] begin Stores the pointer to the first non-space character.
  * @param [out] end Stores the pointer to the last non-space character. 
  */
+// [todo] remove if not used.
 void PDS_trim(const char *first, const char *last, const char **begin, const char **end);
 /**
  * Find the first occurence of a character in a string.
@@ -170,7 +172,6 @@ int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, cons
 /* [todo] parse object (rhs) */
 /* [todo] parse group (rhs) */
 
-/* [todo] parser callback set */
 /* [todo] parser run */
 
 #ifdef __cplusplus
@@ -185,6 +186,7 @@ int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, cons
 
 #define PDS_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
+// [todo] make functions ?
 #define PDS_isspace(c) (    (' '  == (c))  || ('\t' == (c)) \
                          || ('\r' == (c))  || ('\n' == (c)) \
                          || ('\f' == (c))  || ('\v' == (c)) )
@@ -255,6 +257,9 @@ typedef struct
 	PDS_scalar scalar;
 	/** User data. **/
 	void *user_data;
+	
+	// [todo] end callback
+
 	/** New attribute callback. **/
 	int (*attribute) (const char *id, const PDS_scalar *scalar, void *user_data);
 
@@ -262,11 +267,11 @@ typedef struct
 
 	// int (*set_begin) (const char *id, int element_count, void *user_data);
 	// int (*set_element) (const PDS_scalar *scalar, void *user_data);
-	// [todo] set_end
+	// int (*set_end) (const char *id, void *user_data);
 	
 	// int (*sequence_begin) (const char *id, int element_count, void *user_data);
 	// int (*sequence_element) (const PDS_scalar *scalar, void *user_data);
-	// [todo] sequence_end
+	// int (*sequence_end) const char *id, void *user_data);
 
 	// int (*group_begin) (const char *id, void *user_data);
 	// int (*group_end) (const char *id, void *user_data);
@@ -277,6 +282,9 @@ typedef struct
 	/** Display error message. **/
 	void (*error)(int line, const char *text, void *user_data);
 } PDS_parser;
+
+// [todo] create
+// [todo] destroy
 
 /**
  * Set error and run error display callback.
@@ -461,6 +469,7 @@ static int32_t parse_int(const char *first, const char *last, const char **end, 
  * PDS_INVALID_RANGE. If no conversion was performed, 0 is returned and the
  * status variable is set to PDS_INVALUD_VALUE.
  */
+// [todo] replace args by parser
 static int32_t PDS_parse_int(const char* first, const char* last, const char** end, int *status)
 {
     const char *ptr;
@@ -527,6 +536,7 @@ static int32_t PDS_parse_int(const char* first, const char* last, const char** e
  * @return Parsed floating point value. If an error occured or no conversion occured
  * 0.0 is returned.
  */
+// [todo] replace args by parser
 static double PDS_parse_real(const char *first, const char *last, const char **end, int *status) 
 {
     double value;
@@ -689,6 +699,7 @@ static const char* PDS_parse_identifier(const char *first, const char *last, con
  *                         a valid unit or PDS_INVALID_VALUE.
  * @return 1 if a valid unit was parsed, 0 if the string is invalid.
  */
+// [todo] replace args by parser
 static int PDS_parse_unit(const char *first, const char *last, const char **end, int *status)
 {
 	*end = first;
@@ -773,6 +784,7 @@ static int PDS_parse_unit(const char *first, const char *last, const char **end,
  *                         a valid literal value or PDS_INVALID_VALUE.
  * @return 1 if the string contains a valid literal symbol, 0 if the string is invalid.
  */
+// [todo] replace args by parser
 static int PDS_parse_symbol(const char *first, const char *last, const char **end, int *status)
 {
 	*end = first;
@@ -962,6 +974,7 @@ static int parse_date(const char *first, const char *last, const char **end, PDS
  *                         a valid date or PDS_INVALID_VALUE.
  * @return 1 if the string contains a valid date, 0 if the string is invalid.
  */
+// [todo] replace args by parser
 static int parse_time(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
 {
 	int32_t value = 0;
@@ -1096,6 +1109,7 @@ static int parse_time(const char *first, const char *last, const char **end, PDS
  *                         a valid date or PDS_INVALID_VALUE.
  * @return 1 if the string contains a valid date, 0 if the string is invalid.
  */
+// [todo] replace args by parser
 static int PDS_parse_datetime(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
 {
 	int ret = 0;
@@ -1162,6 +1176,7 @@ static int PDS_parse_statement(PDS_parser *parser, int *status)
 {
 	// skip_whitespace
 	// parse_lhs
+	// if (END) { STOP }
 	// skip_whitespace
 	// check for equal sign
 	// skip_whitespace
@@ -1176,6 +1191,8 @@ static int PDS_parse_statement(PDS_parser *parser, int *status)
 	//							' => symbolic literal
 	//							-/+/[0-9] => scalar value
 	//							[a-zA-Z] => identifier
+	// skip_whiespace
+	// if no line jump => error
 	return 1;
 }
 
@@ -1188,6 +1205,7 @@ static int PDS_parse_statement(PDS_parser *parser, int *status)
  *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
  * @return 1 if the pointer identifier was succesfully parsed, or 0 otherwise.
  */
+// [todo] replace args by parser
 static int parse_lhs_pointer(PDS_token *lhs, int *status)
 {
 	const char *begin = 0;
@@ -1224,6 +1242,7 @@ static int parse_lhs_pointer(PDS_token *lhs, int *status)
  *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
  * @return 1 if the pointer identifier was succesfully parsed, or 0 otherwise.
  */
+// [todo] replace args by parser
 static int parse_lhs_attribute(PDS_token *lhs, int *status)
 {
 	const char *begin = 0;
@@ -1278,6 +1297,8 @@ static int parse_lhs_attribute(PDS_token *lhs, int *status)
  *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
  * @return  
  */
+// [todo] END token!!!!!
+// [todo] replace args by parser
 static int parse_lhs(PDS_token *lhs, int *status)
 {
 	static const char name_buffer[] = "^end_groupend_object";
@@ -1365,12 +1386,12 @@ static int skip_whitespaces(PDS_parser *parser)
 			++parser->current;
 			if(parser->current >= parser->last)
 			{
-				parser->status = PDS_INVALID_VALUE;
+				PDS_error(parser, PDS_INVALID_VALUE, "premature end of input");
 				return 0;
 			}
 			if('*' != *parser->current)
 			{
-				parser->status = PDS_INVALID_VALUE;
+				PDS_error(parser, PDS_INVALID_VALUE, "invalid input");
 				return 0;
 			}
 			++parser->current;
@@ -1378,8 +1399,7 @@ static int skip_whitespaces(PDS_parser *parser)
 			{
 				if(('\r' == *parser->current) || ('\n' == *parser->current))
 				{
-					/* Comments must fit on a single line. */
-					parser->status = PDS_INVALID_VALUE;
+					PDS_error(parser, PDS_INVALID_VALUE, "multi-line comment");
 					return 0;
 				}
 				if('/' == *parser->current)
@@ -1390,8 +1410,7 @@ static int skip_whitespaces(PDS_parser *parser)
 					}
 					if((parser->current < parser->last) && ('*' == *(parser->current+1)))
 					{
-						/* Nested comments. */
-						parser->status = PDS_INVALID_VALUE;
+						PDS_error(parser, PDS_INVALID_VALUE, "nested comments");
 						return 0;
 					}
 				}

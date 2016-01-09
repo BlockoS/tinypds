@@ -4,11 +4,6 @@
 #define PDS_IMPL
 #include <pds.h>
  
-void dummy_error(int line, const char *msg, void *user_data)
-{
-	fprintf(stderr, "line %d: %s\n", line, msg);
-}
-
 int main()
 {
 	PDS_parser parser;

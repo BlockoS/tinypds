@@ -22,12 +22,17 @@ int main()
 		test_data(                            "  /* muti-line \n comment */", 15, test_pair(0,1), PDS_INVALID_VALUE ),
 	end_test_data()
 
+	PDS_parser parser;
+	parser.error = dummy_error;
+
 	int i;
 	test_foreach(i)
 	{
-		const char *first = test_str(i);
-		const char *last  = first + strlen(first) - 1;
-		PDS_parser parser = { PDS_OK, first, last, first, 1, 1 };
+		parser.line    = 1;
+		parser.first   = test_str(i);
+		parser.current = parser.first;
+		parser.last    = parser.first + strlen(parser.first) - 1;
+		parser.status  = PDS_OK;
 		int ret;
 		
 		ret = skip_whitespaces(&parser);

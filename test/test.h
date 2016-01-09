@@ -28,4 +28,6 @@ struct \
 #define test_expected(i) (tv[(i)].expected)
 #define test_foreach(i) for(i=0; i<(sizeof(tv)/sizeof(tv[0])); ++i) 
 
+void dummy_error(int line, const char *msg, void *user_data);
+
 #endif /* TEST_H */
