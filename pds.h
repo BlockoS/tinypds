@@ -66,7 +66,7 @@ typedef struct
 	/** Measurement unit. **/
 	PDS_string unit;
 	/** Real (floating-point) value. **/
-	float value;
+	double value;
 } PDS_real;
 /**
  * Time types.
@@ -461,12 +461,9 @@ static int32_t parse_int(const char *first, const char *last, const char **end, 
  * followed by a number expressed in the specified base enclosed between '#'
  * characters.
  * @param [in][out] parser Parser.
- * @return Parsed integer. In case of overflow INT32_MAX or (INT32_MIN for a
- * negative value) is returned, and the status variable is set to
- * PDS_INVALID_RANGE. If no conversion was performed, 0 is returned and the
- * status variable is set to PDS_INVALUD_VALUE.
+ * @return 1 if the string contains a valid integer, 0 otherwise.
  */
-static int32_t PDS_parse_int(PDS_parser *parser)
+static int PDS_parse_int(PDS_parser *parser)
 {
     const char *ptr;
 	int32_t value;
@@ -522,20 +519,10 @@ static int32_t PDS_parse_int(PDS_parser *parser)
 }
 /**
  * Parse a floating point value.
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid
- *                  character of the input string. 
- * @param [in] base Base in which the unsigned integer is encoded. The base must
- *                  be in the range 2 to 16. 
- * @param [in][out] status Status variable set to PDS_OK if an integer was
- *                  successfully parsed. If an error occured it is set to 
- *                  PDS_INVALID_VALUE or PDS_INVALID_RANGE.
- * @return Parsed floating point value. If an error occured or no conversion occured
- * 0.0 is returned.
+ * @param [in][out] parser Parser.
+ * @return 1 if a floating point value was successfully parser, or 0 if an error occured. 
  */
-// [todo] replace args by parser
-static double PDS_parse_real(const char *first, const char *last, const char **end, int *status) 
+static int PDS_parse_real(PDS_parser *parser) 
 {
     double value;
     int neg = 0;
@@ -544,14 +531,13 @@ static double PDS_parse_real(const char *first, const char *last, const char **e
     int32_t integer;
     int32_t decimal;
     const char *ptr;
-    *end = first;
     /* Integer part (can be negative). */   
-    integer = parse_int(first, last, &ptr, 10, status);
+    integer = parse_int(parser->current, parser->last, &ptr, 10, &parser->status);
     /* The integer part can be empty (ex: .03). */
-    if(ptr == first)
+    if(ptr == parser->current)
     {
         integer = 0;
-        *status = PDS_OK;
+        parser->status = PDS_OK;
         if('-' == *ptr)
         {
             neg = 1;
@@ -566,64 +552,68 @@ static double PDS_parse_real(const char *first, const char *last, const char **e
     {
         neg = 1;
     }
-    if(PDS_OK != *status)
+    if(PDS_OK != parser->status)
     {
-        return 0.0;
+		PDS_error(parser, parser->status, "invalid value");
+        return 0;
     }
-    /* Check for decimal part. */
-    if('.' != *ptr)
-    {
-        *end = ptr;
-        return (PDS_OK == *status) ? (double)integer : 0.0;
-    }
-
-    first = ptr+1;
-    decimal = parse_int(first, last, &ptr, 10, status);
-    if((ptr == first) && (0 == decimal))
-    {
-        *status = PDS_OK;
-    }
-    if(PDS_OK != *status)
-    {
-        return 0.0;
-    }
-    if(decimal < 0)
-    {
-        *status = PDS_INVALID_VALUE;
-        return 0.0;
-    }
-    for(div=1; first<ptr; ++first, div*=10)
-    {}
-    value = integer + ((neg?-decimal:decimal) / (double)div);   
     
-    /* And lastly the exponent. */
-    exponent = 1;
-    if(('e' == *ptr) || ('E' == *ptr))
+	value = (double)integer;
+	/* Check for decimal part. */
+    if('.' == *ptr)
     {
-        int32_t i;
-        int32_t n;
-        first = ptr+1;
-        n = parse_int(first, last, &ptr, 10, status);
-        if(PDS_OK != *status)
-        {
-            *status = PDS_INVALID_VALUE;
-            return 0.0;
-        }
-        if(n < 0)
-        {
-            for(i=0, div=1; i>n; --i, div*=10)
-            {}
-            value /= (double)div;
-        }
-        else
-        {
-            for(i=0, exponent=1; i<n; ++i, exponent*=10)
-            {}
-            value *= (double)exponent;
-        }
-    }
-    *end = ptr;
-    return value;   
+		const char *first = ptr+1;
+		decimal = parse_int(first, parser->last, &ptr, 10, &parser->status);
+		if((ptr == first) && (0 == decimal))
+		{
+			parser->status = PDS_OK;
+		}
+		if(PDS_OK != parser->status)
+		{
+			PDS_error(parser, parser->status, "invalid decimal value");
+			return 0;
+		}
+		if(decimal < 0)
+		{
+			PDS_error(parser, PDS_INVALID_VALUE, "negative decimal value");
+			return 0;
+		}
+		for(div=1; first<ptr; ++first, div*=10)
+		{}
+		value += ((neg?-decimal:decimal) / (double)div);   
+    
+		/* And lastly the exponent. */
+		exponent = 1;
+		if(('e' == *ptr) || ('E' == *ptr))
+		{
+			int32_t i;
+			int32_t n;
+			first = ptr+1;
+			n = parse_int(first, parser->last, &ptr, 10, &parser->status);
+			if(PDS_OK != parser->status)
+			{
+				PDS_error(parser, PDS_INVALID_VALUE, "invalid exponent value");
+				return 0;
+			}
+			if(n < 0)
+			{
+				for(i=0, div=1; i>n; --i, div*=10)
+				{}
+				value /= (double)div;
+			}
+			else
+			{
+				for(i=0, exponent=1; i<n; ++i, exponent*=10)
+				{}
+				value *= (double)exponent;
+			}
+		}
+	}
+    parser->current = ptr;
+	parser->scalar.type = PDS_REAL_VALUE;
+	parser->scalar.real.value = value;
+	parser->scalar.real.unit.first = parser->scalar.real.unit.last = 0;
+    return 1;   
 }
 /**
  * Parse identifier. 
