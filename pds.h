@@ -776,45 +776,44 @@ static int PDS_parse_unit(const char *first, const char *last, const char **end,
  * Parse a literal symbol.
  * If the parsing was succesfull, the content of the literal value can be retreived from first+1 to 
  * end-1(excluded). 
- * @param [in] first First character of the input string.
- * @param [in] last Last character of the input string.
- * @param [out] end If not null stores the pointer to the first invalid 
- *                  character of the input string.
- * @param [in][out] status Status variable set to PDS_OK if the string contains
- *                         a valid literal value or PDS_INVALID_VALUE.
+ * @param [in][out] parser Parser.
  * @return 1 if the string contains a valid literal symbol, 0 if the string is invalid.
  */
-// [todo] replace args by parser
-static int PDS_parse_symbol(const char *first, const char *last, const char **end, int *status)
+static int PDS_parse_symbol(PDS_parser *parser)
 {
-	*end = first;
-	if(PDS_OK != *status)
+	const char *first = parser->current;
+	if(PDS_OK != parser->status)
 	{
 		return 0;
 	}
-	/* The string must start witn an apostrophe. */
+	/* The string must start with an apostrophe. */
 	if('\'' != *first)
 	{
-		*status = PDS_INVALID_VALUE;
+		PDS_error(parser, PDS_INVALID_VALUE, "invalid delimiter");
 		return 0;
 	}
 	++first;
+	parser->scalar.symbolic.first = first;
 	/* The string must contain at least one valid character. */
-	if((first>=last) || ('\'' == *first))
+	if((first>=parser->last) || ('\'' == *first))
 	{
-		*status = PDS_INVALID_VALUE;
+		PDS_error(parser, PDS_INVALID_VALUE, "empty literal symbol");
 		return 0;
 	}
 	/* The string may contain spacing, alpha-numeric, other and special characters except the apostrophe. */
-	for(; (first<last) && ('\''!=*first) && (('\t'==*first) || ((*first>=0x20) && (*first<=0x7e))); first++)
+	for(; (first<parser->last) && ('\''!=*first) && (('\t'==*first) || ((*first>=0x20) && (*first<=0x7e))); first++)
 	{}
 	
-	if((first>last) || ('\'' != *first))
+	if((first>parser->last) || ('\'' != *first))
 	{
-		*status = PDS_INVALID_VALUE;
+		PDS_error(parser, PDS_INVALID_VALUE, "missing literal symbol delimiter");
 		return 0;
 	}
-	*end = first+1;
+	parser->scalar.symbolic.last = first;
+	parser->scalar.type = PDS_SYMBOLIC_VALUE;
+	
+	parser->current = first+1;
+	
 	return 1;
 }
 /**
