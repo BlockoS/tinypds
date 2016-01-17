@@ -7,7 +7,7 @@
 int main()
 {
     begin_test_data(int)
-        test_data(                    "ROSETTA:",  8, 1, PDS_OK ),
+        test_data(                    "ROSETTA:",  7, 1, PDS_OK ),
         test_data( "SPACECRAFT_CLOCK_STOP_COUNT", 27, 1, PDS_OK ),
         test_data(             "INVALID_ENDING_",  0, 0, PDS_INVALID_VALUE ),  
         test_data(           "DOUBLE__SEPARATOR",  0, 0, PDS_INVALID_VALUE ), 
@@ -24,7 +24,6 @@ int main()
         int status = PDS_OK;
     
         const char *ptr = PDS_parse_identifier(first, last, &end, &status);
-        
 		check(test_expected(i) == (ptr!=0));
         check(test_end(i) == end);
         check(test_status(i) == status);
