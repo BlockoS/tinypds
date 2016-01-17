@@ -170,11 +170,6 @@ int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, cons
 /* [todo] parse set */
 /* [todo] parse sequence */
 
-/* [todo] parse assignement */
-/* [todo] parse pointer (rhs) */
-/* [todo] parse object (rhs) */
-/* [todo] parse group (rhs) */
-
 /* [todo] parser run */
 
 #ifdef __cplusplus
@@ -1236,21 +1231,6 @@ static int PDS_parse_datetime(PDS_parser *parser)
 	}
 	return ret;
 }
-/**
- * [todo]
- */
-static int PDS_parse_set(const char *first, const char *last, const char **end, /*[todo] parser, */int *status)
-{
-	return 1;
-}
-/**
- * [todo]
- */
-static int PDS_parse_sequence(const char *first, const char *last, const char **end, /* [todo] parser, */ int *status)
-{
-	return 1;
-}
-
 /*****************************************************************************/
 /**
  * Parse attribute name.
@@ -1372,20 +1352,14 @@ static int parse_lhs(PDS_parser *parser)
 /**
  * [todo]
  */
-static int parse_rhs(PDS_parser *parser)
+static int parse_scalar_value(PDS_parser *parser)
 {
-	int ret;
+	int ret = 0;
 	char c;
 
 	c = *parser->current;
 	switch(c)
 	{
-		case '(':
-			// [todo] sequence
-			break;
-		case '{':
-			// [todo] set
-			break;
 		case '"':
 			ret = PDS_parse_string(parser);
 			break;
@@ -1447,10 +1421,91 @@ static int parse_rhs(PDS_parser *parser)
 			{
 				// [todo]
 			}
+			break;
 	}
 	return ret;
 }
+/**
+ * [todo]
+ */
+static int PDS_parse_set(PDS_parser *parser)
+{
+	int ret = 1;
+	if(PDS_OK != parser->status)
+	{
+		return 0;
+	}
 
+	if('{' != *parser->current++)
+	{
+		PDS_error(parser, PDS_INVALID_VALUE, "missing set separator");
+		return 0;
+	}
+	
+	ret = skip_whitespaces(parser);
+	if('}' == *parser->current)
+	{
+		parser->current++;
+		return 1;
+	}
+
+	while(ret && (parser->current<=parser->last))
+	{
+		ret = skip_whitespaces(parser);
+		if(ret)
+		{
+			ret = parse_scalar_value(parser);
+			if(ret)
+			{
+				ret = skip_whitespaces(parser);
+				if(ret)
+				{
+					char c = *parser->current++;
+					if('}' == c)
+					{
+						break;
+					}
+					else if(',' != c)
+					{
+						ret = 0;
+						PDS_error(parser, PDS_INVALID_VALUE, "invalid element separator");
+					}
+				}
+			}
+		}
+	}
+	return ret;
+}
+/**
+ * [todo]
+ */
+static int PDS_parse_sequence(const char *first, const char *last, const char **end, /* [todo] parser, */ int *status)
+{
+	return 1;
+}
+/**
+ * [todo]
+ */
+static int parse_rhs(PDS_parser *parser)
+{
+	int ret = 0;
+	char c;
+
+	c = *parser->current;
+	switch(c)
+	{
+		case '(':
+			// [todo] sequence
+			break;
+		case '{':
+			ret = PDS_parse_set(parser);
+			break;
+		default:
+			ret = parse_scalar_value(parser);
+			break;
+	}
+	return ret;
+}
 /*****************************************************************************/
 /**
  * [todo]
