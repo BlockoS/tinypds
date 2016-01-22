@@ -282,17 +282,20 @@ typedef struct
 	// [todo] end callback
 
 	/** New attribute callback. **/
-	int (*attribute) (const char *id, const PDS_scalar *scalar, void *user_data);
+	// int (*attribute) (const char *id, const PDS_scalar *scalar, void *user_data);
 
 	// int (*pointer) (const char *id, const PDS_value *value, void *user_data);
 
 	// int (*set_begin) (const char *id, int element_count, void *user_data);
 	// int (*set_element) (const PDS_scalar *scalar, void *user_data);
 	// int (*set_end) (const char *id, void *user_data);
-	
-	// int (*sequence_begin) (const char *id, int element_count, void *user_data);
-	// int (*sequence_element) (const PDS_scalar *scalar, void *user_data);
-	// int (*sequence_end) const char *id, void *user_data);
+
+	/** Sequence start callback. **/	
+	int (*sequence_begin) (const char *first, const char *last, void *user_data);
+	/** Element sequence callback. **/
+	int (*sequence_element) (const PDS_scalar *scalar, void *user_data);
+	/** Sequence end callback. **/
+	int (*sequence_end) (void *user_data);
 
 	// int (*group_begin) (const char *id, void *user_data);
 	// int (*group_end) (const char *id, void *user_data);
@@ -1479,9 +1482,87 @@ static int PDS_parse_set(PDS_parser *parser)
 /**
  * [todo]
  */
-static int PDS_parse_sequence(const char *first, const char *last, const char **end, /* [todo] parser, */ int *status)
+static int PDS_parse_sequence(PDS_parser *parser)
 {
-	return 1;
+	int ret = 1;
+	int depth = 1;
+	if(PDS_OK != parser->status)
+	{
+		return 0;
+	}
+
+	if('(' != *parser->current++)
+	{
+		PDS_error(parser, PDS_INVALID_VALUE, "missing sequence separator");
+		return 0;
+	}
+	if(0 != parser->sequence_begin)
+	{
+		ret = parser->sequence_begin(parser->token.first, parser->token.last, parser->user_data);
+		if(!ret)
+		{
+			return 0;
+		}	
+	}
+	while(ret && (depth > 0) && (parser->current <= parser->last))
+	{
+		ret = skip_whitespaces(parser);
+		if(ret)
+		{
+			if('(' == *parser->current)
+			{
+				++parser->current;
+				++depth;
+				ret = parser->sequence_begin(parser->token.first, parser->token.last, parser->user_data);
+				if(!ret)
+				{
+					break;
+				}
+			}
+			else
+			{
+				ret = parse_scalar_value(parser);
+				if(ret)
+				{
+					if(0 != parser->sequence_element)
+					{
+						ret = parser->sequence_element(&parser->scalar, parser->user_data);
+						if(!ret)
+						{
+							break;
+						}
+					}
+					ret = skip_whitespaces(parser);
+					if(ret)
+					{
+						char c;
+						while(((c = *parser->current++) == ')') && (depth > 0))
+						{
+							--depth;
+							if(0 != parser->sequence_end)
+							{
+								ret = parser->sequence_end(parser->user_data);
+								if(!ret)
+								{
+									break;
+								}
+							}
+							if(depth)
+							{
+								ret = skip_whitespaces(parser);
+							}
+						}
+						if(ret && (depth > 0) && (',' != c))
+						{
+							ret = 0;
+							PDS_error(parser, PDS_INVALID_VALUE, "invalid element separator");
+						}
+					}
+				}
+			}
+		}
+	}
+	return ret;
 }
 /**
  * [todo]
@@ -1495,7 +1576,7 @@ static int parse_rhs(PDS_parser *parser)
 	switch(c)
 	{
 		case '(':
-			// [todo] sequence
+			ret = PDS_parse_sequence(parser);
 			break;
 		case '{':
 			ret = PDS_parse_set(parser);
