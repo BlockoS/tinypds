@@ -972,8 +972,7 @@ static int PDS_parse_string(PDS_parser *parser)
  *                         a valid date or PDS_INVALID_VALUE.
  * @return 1 if the string contains a valid date, 0 if the string is invalid.
  */
-// [todo] rename into PDS_parser_date
-static int parse_date(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
+static int PDS_parse_date(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
 {
 	int32_t value;
 	const char *next = 0;
@@ -1061,8 +1060,7 @@ static int parse_date(const char *first, const char *last, const char **end, PDS
  *                         a valid date or PDS_INVALID_VALUE.
  * @return 1 if the string contains a valid date, 0 if the string is invalid.
  */
-// [todo] rename into PDS_parser_time
-static int parse_time(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
+static int PDS_parse_time(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
 {
 	int32_t value = 0;
 	const char *next = 0;
@@ -1211,7 +1209,7 @@ static int PDS_parse_datetime(PDS_parser *parser)
 
 	date->time_type = PDS_LOCAL_TIME;
 	
-	ret = parse_date(parser->current, parser->last, &next, date, &parser->status);	
+	ret = PDS_parse_date(parser->current, parser->last, &next, date, &parser->status);	
 	if(PDS_OK != parser->status)
 	{
 		PDS_error(parser, parser->status, "invalid date");
@@ -1230,7 +1228,7 @@ static int PDS_parse_datetime(PDS_parser *parser)
 			return 1;
 		}
 	}
-	ret = parse_time(next, parser->last, &next, date, &parser->status);
+	ret = PDS_parse_time(next, parser->last, &next, date, &parser->status);
 	if(PDS_OK == parser->status)
 	{
 		parser->scalar.type = PDS_DATE_TIME_VALUE;
