@@ -1358,9 +1358,12 @@ static int parse_lhs(PDS_parser *parser)
 	return 0;
 }
 /**
- * [todo]
+ * Parse a scalar value.
+ * A scalar value can be a string, a literal symbol, a date/time, an integer or a floating point value.
+ * @param [in][out] parser Parser.
+ * @return 1 if the string contains a valid scalar value, 0 otherwise.
  */
-static int parse_scalar_value(PDS_parser *parser) // [todo] rename into PDS_parse_scalar_value
+static int PDS_parse_scalar_value(PDS_parser *parser)
 {
 	int ret = 0;
 	char c;
@@ -1464,7 +1467,7 @@ static int PDS_parse_set(PDS_parser *parser)
 		ret = PDS_skip_whitespaces(parser);
 		if(ret)
 		{
-			ret = parse_scalar_value(parser);
+			ret = PDS_parse_scalar_value(parser);
 			if(ret)
 			{
 				// [todo] set element callback
@@ -1530,7 +1533,7 @@ static int PDS_parse_sequence(PDS_parser *parser)
 			}
 			else
 			{
-				ret = parse_scalar_value(parser);
+				ret = PDS_parse_scalar_value(parser);
 				if(ret)
 				{
 					if(0 != parser->sequence_element)
@@ -1591,7 +1594,7 @@ static int parse_rhs(PDS_parser *parser)
 			ret = PDS_parse_set(parser);
 			break;
 		default:
-			ret = parse_scalar_value(parser);
+			ret = PDS_parse_scalar_value(parser);
 			// [todo] attribute or pointer callback (check token type)
 			break;
 	}
