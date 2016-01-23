@@ -30,7 +30,7 @@ int main()
         const char *end   = 0;
 		int status = PDS_OK;
     
-        int32_t value  = parse_int(first, last, &end, test_expected(i).base, &status);
+        int32_t value  = PDS_parse_int_base(first, last, &end, test_expected(i).base, &status);
 		
 		check(test_expected(i).value == value);
         check(test_end(i) == end);

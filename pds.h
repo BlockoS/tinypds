@@ -456,7 +456,7 @@ int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, cons
 /*
  * Parse an integer in the specified base.
  */
-static int32_t parse_int(const char *first, const char *last, const char **end, int base, int *status) // [todo] rename PDS_parse_int_base
+static int32_t PDS_parse_int_base(const char *first, const char *last, const char **end, int base, int *status)
 {
     const char *ptr;
     int64_t current;
@@ -571,7 +571,7 @@ static int PDS_parse_int(PDS_parser *parser)
         return 0;
     }
     /* Parse value. */
-    value = parse_int(parser->current, parser->last, &ptr, 10, &parser->status);
+    value = PDS_parse_int_base(parser->current, parser->last, &ptr, 10, &parser->status);
     if(PDS_OK != parser->status)
     {
 		PDS_error(parser, parser->status, "invalid integer value");
@@ -589,7 +589,7 @@ static int PDS_parse_int(PDS_parser *parser)
 			return 0;
 		}
 		const char *current = ptr+1;
-		value = parse_int(current, parser->last, &ptr, value, &parser->status);
+		value = PDS_parse_int_base(current, parser->last, &ptr, value, &parser->status);
 		if(PDS_OK == parser->status)
 		{
 			/* Check that the number is followed by a closing '#'. */
@@ -630,7 +630,7 @@ static int PDS_parse_real(PDS_parser *parser)
     int32_t decimal;
     const char *ptr;
     /* Integer part (can be negative). */   
-    integer = parse_int(parser->current, parser->last, &ptr, 10, &parser->status);
+    integer = PDS_parse_int_base(parser->current, parser->last, &ptr, 10, &parser->status);
     /* The integer part can be empty (ex: .03). */
     if(ptr == parser->current)
     {
@@ -661,7 +661,7 @@ static int PDS_parse_real(PDS_parser *parser)
     if('.' == *ptr)
     {
 		const char *first = ptr+1;
-		decimal = parse_int(first, parser->last, &ptr, 10, &parser->status);
+		decimal = PDS_parse_int_base(first, parser->last, &ptr, 10, &parser->status);
 		if((ptr == first) && (0 == decimal))
 		{
 			parser->status = PDS_OK;
@@ -687,7 +687,7 @@ static int PDS_parse_real(PDS_parser *parser)
 			int32_t i;
 			int32_t n;
 			first = ptr+1;
-			n = parse_int(first, parser->last, &ptr, 10, &parser->status);
+			n = PDS_parse_int_base(first, parser->last, &ptr, 10, &parser->status);
 			if(PDS_OK != parser->status)
 			{
 				PDS_error(parser, PDS_INVALID_VALUE, "invalid exponent value");
@@ -816,7 +816,7 @@ static int PDS_parse_unit(PDS_parser *parser)
 				if('*' == *first)
 				{
 					const char *next = 0;
-					(void)parse_int(first+1, parser->last, &next, 10, &parser->status);
+					(void)PDS_parse_int_base(first+1, parser->last, &next, 10, &parser->status);
 					if(PDS_OK != parser->status)
 					{
 						PDS_error(parser, parser->status, "invalid unit exponent");
@@ -983,7 +983,7 @@ static int parse_date(const char *first, const char *last, const char **end, PDS
 		return 0;
 	}
 	/* Year */
-	value = parse_int(first, last, &next, 10, status);
+	value = PDS_parse_int_base(first, last, &next, 10, status);
 	if(PDS_OK != *status)
 	{
 		return 0;
@@ -1007,7 +1007,7 @@ static int parse_date(const char *first, const char *last, const char **end, PDS
 	date->year = (uint16_t)value;
 	++first;
 	/* Month or day-of-year. */
-	value = parse_int(first, last, &next, 10, status);
+	value = PDS_parse_int_base(first, last, &next, 10, status);
 	if(PDS_OK != *status)
 	{
 		return 0;
@@ -1021,7 +1021,7 @@ static int parse_date(const char *first, const char *last, const char **end, PDS
 		{
 			date->month= (uint8_t)value;
 			/* Day of month. */
-			value = parse_int(next+1, last, &next, 10, status);
+			value = PDS_parse_int_base(next+1, last, &next, 10, status);
 			if(PDS_OK != *status)
 			{
 				return 0;
@@ -1075,7 +1075,7 @@ static int parse_time(const char *first, const char *last, const char **end, PDS
 	}
 
 	/* Hour. */
-	value = parse_int(first, last, &next, 10, status);
+	value = PDS_parse_int_base(first, last, &next, 10, status);
 	if(PDS_OK != *status)
 	{
 		return 0;
@@ -1093,7 +1093,7 @@ static int parse_time(const char *first, const char *last, const char **end, PDS
 		return 0;
 	}
 	/* Minutes. */
-	value = parse_int(next+1, last, &next, 10, status);
+	value = PDS_parse_int_base(next+1, last, &next, 10, status);
 	if(PDS_OK != *status)
 	{
 		return 0;
@@ -1108,13 +1108,13 @@ static int parse_time(const char *first, const char *last, const char **end, PDS
 	if(':' == *next)
 	{
 		first = next+1;
-		value = parse_int(next+1, last, &next, 10, status);
+		value = PDS_parse_int_base(next+1, last, &next, 10, status);
 		if('.' == *next)
 		{		
 			int32_t tmp, i;
 			first = next+1;
 			*status = PDS_OK;
-			tmp = parse_int(first, last, &next, 10, status);
+			tmp = PDS_parse_int_base(first, last, &next, 10, status);
 			if(PDS_OK != *status)
 			{
 				return 0;
@@ -1149,7 +1149,7 @@ static int parse_time(const char *first, const char *last, const char **end, PDS
 	{
 		date->time_type = PDS_ZONED_TIME;
 		/* Hour offset. */
-		value = parse_int(next, last, &next, 10, status);
+		value = PDS_parse_int_base(next, last, &next, 10, status);
 		if(PDS_OK != *status)
 		{
 			return 0;
@@ -1163,7 +1163,7 @@ static int parse_time(const char *first, const char *last, const char **end, PDS
 		/* Minute offset? */
 		if(':' == *next)
 		{
-			value = parse_int(next+1, last, &next, 10, status);
+			value = PDS_parse_int_base(next+1, last, &next, 10, status);
 			if(PDS_OK != *status)
 			{
 				return 0;
