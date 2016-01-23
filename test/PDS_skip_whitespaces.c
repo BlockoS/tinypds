@@ -35,7 +35,7 @@ int main()
 		parser.status  = PDS_OK;
 		int ret;
 		
-		ret = skip_whitespaces(&parser);
+		ret = PDS_skip_whitespaces(&parser);
 		
 		check(test_status(i) == parser.status);	
 		check(test_end(i) == parser.current);	

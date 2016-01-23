@@ -1,8 +1,7 @@
 #ifndef PDS_H
 #define PDS_H
-
+// [todo] Readme + examples
 // [todo] some minor configuration stuffs.
-// [todo] replace char by int8
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -166,10 +165,7 @@ int PDS_string_compare(const char *f0, const char *l0, const char *f1, const cha
 int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, const char *l1);
 
 
-/* [todo] all-in-one value parser */
-/* [todo] parse set */
-/* [todo] parse sequence */
-
+/* [todo] parser config struct ? */
 /* [todo] parser run */
 
 #ifdef __cplusplus
@@ -237,6 +233,15 @@ enum PDS_TOKEN_TYPE
 	PDS_TOKEN_POINTER,
 	PDS_TOKEN_GROUP,
 	PDS_TOKEN_OBJECT,
+	PDS_TOKEN_END,
+};
+/**
+ * PDS token flag.
+ */
+enum PDS_TOKEN_FLAG
+{
+	PDS_TOKEN_FLAG_BEGIN = 0,
+	PDS_TOKEN_FLAG_END
 };
 /**
  * PDS token.
@@ -279,29 +284,37 @@ typedef struct
 	/** User data. **/
 	void *user_data;
 	
+	// [todo] declare type for callbacks?
 	// [todo] end callback
 
 	/** New attribute callback. **/
-	// int (*attribute) (const char *id, const PDS_scalar *scalar, void *user_data);
-
-	// int (*pointer) (const char *id, const PDS_value *value, void *user_data);
-
-	// int (*set_begin) (const char *id, int element_count, void *user_data);
-	// int (*set_element) (const PDS_scalar *scalar, void *user_data);
-	// int (*set_end) (const char *id, void *user_data);
+	int (*attribute) (const char *first, const char *last, const PDS_scalar *scalar, void *user_data);
+	/** New pointer callback. **/
+	int (*pointer) (const char *first, const char *last, const PDS_scalar *scalar, void *user_data);
+	
+	// [todo]
+	int (*set_begin) (const char *first, const char *last, void *user_data);
+	// [todo]
+	int (*set_element) (const PDS_scalar *scalar, void *user_data);
+	// [todo]
+	int (*set_end) (void *user_data); // [todo] add set name?
 
 	/** Sequence start callback. **/	
 	int (*sequence_begin) (const char *first, const char *last, void *user_data);
 	/** Element sequence callback. **/
 	int (*sequence_element) (const PDS_scalar *scalar, void *user_data);
 	/** Sequence end callback. **/
-	int (*sequence_end) (void *user_data);
+	int (*sequence_end) (void *user_data); // [todo] add sequence name?
 
-	// int (*group_begin) (const char *id, void *user_data);
-	// int (*group_end) (const char *id, void *user_data);
+	// [todo]
+	int (*group_begin) (const char *first, const char *last, void *user_data);
+	// [todo]
+	int (*group_end) (const char *first, const char *last, void *user_data);
 
-	// int (*object_begin) (const char *id, void *user_data);
-	// int (*object_end) (const char *id, void *user_data);
+	// [todo]
+	int (*object_begin) (const char *first, const char *last, void *user_data);
+	// [todo]
+	int (*object_end) (const char *first, const char *last, void *user_data);
 	
 	/** Display error message. **/
 	void (*error)(int line, const char *text, void *user_data);
@@ -324,8 +337,6 @@ static void PDS_error(PDS_parser *parser, int error, const char *message)
 		parser->error(parser->line, message, parser->user_data);
 	}
 }
-
-/*****************************************************************************/
 /**
  * Skip whitespaces and comments from string.
  * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
@@ -335,7 +346,7 @@ static void PDS_error(PDS_parser *parser, int error, const char *message)
  * @param [in][out] parser PDS parser context.
  * @return 0 if an error occured, 1 upon success.
  */
-static int skip_whitespaces(PDS_parser *parser)
+static int PDS_skip_whitespaces(PDS_parser *parser) 
 {
 	if(PDS_OK != parser->status)
 	{
@@ -396,8 +407,6 @@ static int skip_whitespaces(PDS_parser *parser)
 	}
 	return 1;
 }
-
-/*****************************************************************************/
 /*
  * Remove leading and trailing white spaces in a string.
  * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
@@ -444,13 +453,10 @@ int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, cons
 	{}
 	return ((f0>l0)&&(f1>l1));
 }
-
-/*****************************************************************************/
-
 /*
  * Parse an integer in the specified base.
  */
-static int32_t parse_int(const char *first, const char *last, const char **end, int base, int *status)
+static int32_t parse_int(const char *first, const char *last, const char **end, int base, int *status) // [todo] rename PDS_parse_int_base
 {
     const char *ptr;
     int64_t current;
@@ -966,6 +972,7 @@ static int PDS_parse_string(PDS_parser *parser)
  *                         a valid date or PDS_INVALID_VALUE.
  * @return 1 if the string contains a valid date, 0 if the string is invalid.
  */
+// [todo] rename into PDS_parser_date
 static int parse_date(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
 {
 	int32_t value;
@@ -1054,6 +1061,7 @@ static int parse_date(const char *first, const char *last, const char **end, PDS
  *                         a valid date or PDS_INVALID_VALUE.
  * @return 1 if the string contains a valid date, 0 if the string is invalid.
  */
+// [todo] rename into PDS_parser_time
 static int parse_time(const char *first, const char *last, const char **end, PDS_datetime *date, int *status)
 {
 	int32_t value = 0;
@@ -1234,7 +1242,6 @@ static int PDS_parse_datetime(PDS_parser *parser)
 	}
 	return ret;
 }
-/*****************************************************************************/
 /**
  * Parse attribute name.
  * A attribute name is an identifier or the concatenation of a namespace and an identifier separated by ':'.
@@ -1302,6 +1309,7 @@ static int parse_lhs(PDS_parser *parser)
 		{ 0, 8, PDS_TOKEN_GROUP  }, /* end_group  */
 		{13,18, PDS_TOKEN_OBJECT }, /* object     */
 		{ 9,18, PDS_TOKEN_OBJECT }, /* end_object */
+		{ 0, 2, PDS_TOKEN_END    }, /* end        */
 	};
 	int i;
 	/* Sanity check. */
@@ -1325,7 +1333,7 @@ static int parse_lhs(PDS_parser *parser)
 		lhs->type = PDS_TOKEN_POINTER;
 		return 1;
 	}
-	/* 2. group/object */
+	/* 2. group/object/end */
 	for(lhs->last=lhs->first; (lhs->last<=parser->last) && !(PDS_isspace(*lhs->last) || ('/'==*lhs->last)); lhs->last++)
 	{}
 	lhs->last--;
@@ -1351,11 +1359,10 @@ static int parse_lhs(PDS_parser *parser)
 	PDS_error(parser, PDS_INVALID_VALUE, "no valid token found");
 	return 0;
 }
-
 /**
  * [todo]
  */
-static int parse_scalar_value(PDS_parser *parser)
+static int parse_scalar_value(PDS_parser *parser) // [todo] rename into PDS_parse_scalar_value
 {
 	int ret = 0;
 	char c;
@@ -1387,7 +1394,7 @@ static int parse_scalar_value(PDS_parser *parser)
 			else if(PDS_isdigit(c) || ('-' == c) || ('+' == c) || ('.' == c))
 			{
 				const char *ptr = parser->current+1;
-				const char *eol = PDS_find_first(ptr, parser->last, '\n'); // [todo] store in parser
+				const char *eol = PDS_find_first(ptr, parser->last, '\n'); // [todo] store start and end of line in parser
 				if(0 == eol)
 				{
 					eol = parser->last;
@@ -1422,7 +1429,7 @@ static int parse_scalar_value(PDS_parser *parser)
 			}
 			else
 			{
-				// [todo]
+				// [todo] error?
 			}
 			break;
 	}
@@ -1444,28 +1451,32 @@ static int PDS_parse_set(PDS_parser *parser)
 		PDS_error(parser, PDS_INVALID_VALUE, "missing set separator");
 		return 0;
 	}
+	// [todo] begin set callback
 	
-	ret = skip_whitespaces(parser);
+	ret = PDS_skip_whitespaces(parser);
 	if('}' == *parser->current)
 	{
 		parser->current++;
+		// [todo] end set callback
 		return 1;
 	}
 
 	while(ret && (parser->current<=parser->last))
 	{
-		ret = skip_whitespaces(parser);
+		ret = PDS_skip_whitespaces(parser);
 		if(ret)
 		{
 			ret = parse_scalar_value(parser);
 			if(ret)
 			{
-				ret = skip_whitespaces(parser);
+				// [todo] set element callback
+				ret = PDS_skip_whitespaces(parser);
 				if(ret)
 				{
 					char c = *parser->current++;
 					if('}' == c)
 					{
+						// [todo] end set callback
 						break;
 					}
 					else if(',' != c)
@@ -1506,7 +1517,7 @@ static int PDS_parse_sequence(PDS_parser *parser)
 	}
 	while(ret && (depth > 0) && (parser->current <= parser->last))
 	{
-		ret = skip_whitespaces(parser);
+		ret = PDS_skip_whitespaces(parser);
 		if(ret)
 		{
 			if('(' == *parser->current)
@@ -1532,7 +1543,7 @@ static int PDS_parse_sequence(PDS_parser *parser)
 							break;
 						}
 					}
-					ret = skip_whitespaces(parser);
+					ret = PDS_skip_whitespaces(parser);
 					if(ret)
 					{
 						char c;
@@ -1549,7 +1560,7 @@ static int PDS_parse_sequence(PDS_parser *parser)
 							}
 							if(depth)
 							{
-								ret = skip_whitespaces(parser);
+								ret = PDS_skip_whitespaces(parser);
 							}
 						}
 						if(ret && (depth > 0) && (',' != c))
@@ -1583,11 +1594,11 @@ static int parse_rhs(PDS_parser *parser)
 			break;
 		default:
 			ret = parse_scalar_value(parser);
+			// [todo] attribute or pointer callback (check token type)
 			break;
 	}
 	return ret;
 }
-/*****************************************************************************/
 /**
  * [todo]
  */
@@ -1599,7 +1610,7 @@ static int PDS_parse_statement(PDS_parser *parser)
 		return 0;
 	}
 
-	ret = skip_whitespaces(parser);
+	ret = PDS_skip_whitespaces(parser);
 	if(!ret)
 	{
 		return 0;
@@ -1613,7 +1624,7 @@ static int PDS_parse_statement(PDS_parser *parser)
 	}
 	// [todo] if (END) { STOP }
 	
-	ret = skip_whitespaces(parser);
+	ret = PDS_skip_whitespaces(parser);
 	if(!ret)
 	{
 		return 0;
@@ -1626,13 +1637,12 @@ static int PDS_parse_statement(PDS_parser *parser)
 	}
 	++parser->current;
 
-	ret = skip_whitespaces(parser);
+	ret = PDS_skip_whitespaces(parser);
 	if(!ret)
 	{
 		return 0;
 	}
 	
-	// [todo] callbacks!
 	switch(parser->token.type)
 	{
 		case PDS_TOKEN_ATTRIBUTE:
@@ -1653,6 +1663,7 @@ static int PDS_parse_statement(PDS_parser *parser)
 			}
 			parser->scalar.identifier.last = parser->current-1;
 			parser->scalar.type = PDS_IDENTIFIER_VALUE;
+			// [todo] group/object callback (begin or end => set flag)
 			break;
 		default:
 			// [todo] error;
@@ -1660,7 +1671,7 @@ static int PDS_parse_statement(PDS_parser *parser)
 	}
 
 	int line = parser->line;
-	ret = skip_whitespaces(parser);
+	ret = PDS_skip_whitespaces(parser);
 	if(!ret)
 	{
 		return 0;
