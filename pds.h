@@ -1441,7 +1441,11 @@ static int PDS_parse_scalar_value(PDS_parser *parser)
 	return ret;
 }
 /**
- * [todo]
+ * Parse a value set.
+ * set_begin, set_end callbacks are called at the beginning and end of each sets.
+ * set_element is called for each set element.
+ * @param [in][out] parser Parser.
+ * @return 1 if a set was succesfully parsed, 0 otherwise.
  */
 static int PDS_parse_set(PDS_parser *parser)
 {
@@ -1524,7 +1528,7 @@ static int PDS_parse_set(PDS_parser *parser)
  * sequence_begin, sequence_end callbacks are called at the beginning and end of each sequences.
  * sequence_element is called for each sequence element.
  * @param [in][out] parser Parser.
- * @return 1 if a multidimensional sequence was succesfully parser, 0 otherwise.
+ * @return 1 if a multidimensional sequence was succesfully parsed, 0 otherwise.
  */
 static int PDS_parse_sequence(PDS_parser *parser)
 {
@@ -1623,7 +1627,20 @@ static int parse_rhs(PDS_parser *parser)
 			break;
 		default:
 			ret = PDS_parse_scalar_value(parser);
-			// [todo] attribute or pointer callback (check token type)
+			if(ret)
+			{
+				if(PDS_TOKEN_POINTER == parser->token.type)
+				{
+					if(0 != parser->pointer)
+					{
+						ret = parser->pointer(parser->token.first, parser->token.last, &parser->scalar, parser->user_data);
+					}
+				}
+				else if(0 != parser->attribute)
+				{
+					ret = parser->attribute(parser->token.first, parser->token.last, &parser->scalar, parser->user_data);
+				}
+			}
 			break;
 	}
 	return ret;
@@ -1684,19 +1701,33 @@ static int PDS_parse_statement(PDS_parser *parser)
 			break;
 		case PDS_TOKEN_GROUP:
 		case PDS_TOKEN_OBJECT:
-			parser->scalar.identifier.first = PDS_parse_identifier(parser->current, parser->last, &parser->current, &parser->status);
-			if(PDS_OK != parser->status)
-			{
-				PDS_error(parser, PDS_INVALID_VALUE, "invalid group identifier");
-				return 0;
+			{	
+				int (*callback)(const char*, const char*, void*);	
+				parser->scalar.identifier.first = PDS_parse_identifier(parser->current, parser->last, &parser->current, &parser->status);
+				if(PDS_OK != parser->status)
+				{
+					PDS_error(parser, PDS_INVALID_VALUE, "invalid group identifier");
+					return 0;
+				}
+				parser->scalar.identifier.last = parser->current-1;
+				parser->scalar.type = PDS_IDENTIFIER_VALUE;
+				if(PDS_TOKEN_GROUP == parser->token.type)
+				{
+					callback = (PDS_TOKEN_FLAG_BEGIN == parser->token.flag) ? parser->group_begin : parser->group_end;
+				}
+				else
+				{
+					callback = (PDS_TOKEN_FLAG_BEGIN == parser->token.flag) ? parser->object_begin : parser->object_end;
+				}
+				if(0 != callback)
+				{
+					ret = callback(parser->token.first, parser->token.last, parser->user_data);
+				}
 			}
-			parser->scalar.identifier.last = parser->current-1;
-			parser->scalar.type = PDS_IDENTIFIER_VALUE;
-			// [todo] group/object callback (begin or end => set flag)
 			break;
 		default:
-			// [todo] error;
-			return 0;
+		// [todo] error;
+		return 0;
 	}
 
 	int line = parser->line;
