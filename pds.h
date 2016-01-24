@@ -240,7 +240,8 @@ enum PDS_TOKEN_TYPE
  */
 enum PDS_TOKEN_FLAG
 {
-	PDS_TOKEN_FLAG_BEGIN = 0,
+	PDS_TOKEN_FLAG_NONE = 0,
+	PDS_TOKEN_FLAG_BEGIN,
 	PDS_TOKEN_FLAG_END
 };
 /**
@@ -855,7 +856,7 @@ static int PDS_parse_unit(PDS_parser *parser)
 		PDS_error(parser, PDS_INVALID_VALUE, "missing or invalid unit delimiter");
 		return 0;
 	}
-	parser->scalar.integer.unit.last = first;
+	parser->scalar.integer.unit.last = first-1;
 	parser->current = first+1;
 	return 1;
 }
@@ -1301,13 +1302,14 @@ static int parse_lhs(PDS_parser *parser)
 		off_t first;
 		off_t last;
 		int   type;
+		int   flag;
 	} lhs_parser[] =
 	{
-		{ 4, 8, PDS_TOKEN_GROUP  }, /* group      */
-		{ 0, 8, PDS_TOKEN_GROUP  }, /* end_group  */
-		{13,18, PDS_TOKEN_OBJECT }, /* object     */
-		{ 9,18, PDS_TOKEN_OBJECT }, /* end_object */
-		{ 0, 2, PDS_TOKEN_END    }, /* end        */
+		{ 4, 8, PDS_TOKEN_GROUP,  PDS_TOKEN_FLAG_BEGIN }, /* group      */
+		{ 0, 8, PDS_TOKEN_GROUP,  PDS_TOKEN_FLAG_END   }, /* end_group  */
+		{13,18, PDS_TOKEN_OBJECT, PDS_TOKEN_FLAG_BEGIN }, /* object     */
+		{ 9,18, PDS_TOKEN_OBJECT, PDS_TOKEN_FLAG_END   }, /* end_object */
+		{ 0, 2, PDS_TOKEN_END,    PDS_TOKEN_FLAG_NONE  }, /* end        */
 	};
 	int i;
 	/* Sanity check. */
@@ -1329,6 +1331,7 @@ static int parse_lhs(PDS_parser *parser)
 		}
 		lhs->last = parser->current-1;
 		lhs->type = PDS_TOKEN_POINTER;
+		lhs->flag = PDS_TOKEN_FLAG_NONE;
 		return 1;
 	}
 	/* 2. group/object/end */
@@ -1341,6 +1344,7 @@ static int parse_lhs(PDS_parser *parser)
 		{
 			parser->current = lhs->last+1;
 			lhs->type = lhs_parser[i].type; 
+			lhs->flag = lhs_parser[i].flag;
 			return 1;
 		}
 	}
@@ -1350,6 +1354,7 @@ static int parse_lhs(PDS_parser *parser)
 	{
 		lhs->last = parser->current-1;
 		lhs->type = PDS_TOKEN_ATTRIBUTE;
+		lhs->flag = PDS_TOKEN_FLAG_NONE;
 		return 1;
 	}
 
@@ -1419,10 +1424,9 @@ static int PDS_parse_scalar_value(PDS_parser *parser)
 					}
 					if(ret)
 					{
-						ptr = PDS_find_first(parser->current, eol, '<');
-						if(ptr)
+						ret = PDS_skip_whitespaces(parser);
+						if(ret && ('<' == *parser->current))
 						{
-							parser->current = ptr;
 							ret = PDS_parse_unit(parser);
 						}
 					}
@@ -1492,7 +1496,11 @@ static int PDS_parse_set(PDS_parser *parser)
 	return ret;
 }
 /**
- * [todo]
+ * Parse a multidimensional sequence.
+ * sequence_begin, sequence_end callbacks are called at the beginning and end of each sequences.
+ * sequence_element is called for each sequence element.
+ * @param [in][out] parser Parser.
+ * @return 1 if a multidimensional sequence was succesfully parser, 0 otherwise.
  */
 static int PDS_parse_sequence(PDS_parser *parser)
 {
