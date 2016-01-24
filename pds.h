@@ -1456,13 +1456,25 @@ static int PDS_parse_set(PDS_parser *parser)
 		PDS_error(parser, PDS_INVALID_VALUE, "missing set separator");
 		return 0;
 	}
-	// [todo] begin set callback
+	if(0 != parser->set_begin)
+	{
+		if(0 == parser->set_begin(parser->token.first, parser->token.last, parser->user_data))
+		{
+			return 0;
+		}
+	}
 	
 	ret = PDS_skip_whitespaces(parser);
 	if('}' == *parser->current)
 	{
 		parser->current++;
-		// [todo] end set callback
+		if(0 == parser->set_end)
+		{
+			if(0 == parser->set_end(parser->user_data))
+			{
+				return 0;
+			}
+		}
 		return 1;
 	}
 
@@ -1474,14 +1486,26 @@ static int PDS_parse_set(PDS_parser *parser)
 			ret = PDS_parse_scalar_value(parser);
 			if(ret)
 			{
-				// [todo] set element callback
+				if(0 != parser->set_element)
+				{
+					if(0 == parser->set_element(&parser->scalar, parser->user_data))
+					{
+						return 0;
+					}
+				}
 				ret = PDS_skip_whitespaces(parser);
 				if(ret)
 				{
 					char c = *parser->current++;
 					if('}' == c)
 					{
-						// [todo] end set callback
+						if(0 != parser->set_end)
+						{
+							if(0 == parser->set_end(parser->user_data))
+							{
+								return 0;
+							}
+						}
 						break;
 					}
 					else if(',' != c)
@@ -1518,8 +1542,7 @@ static int PDS_parse_sequence(PDS_parser *parser)
 	}
 	if(0 != parser->sequence_begin)
 	{
-		ret = parser->sequence_begin(parser->token.first, parser->token.last, parser->user_data);
-		if(!ret)
+		if(0 == parser->sequence_begin(parser->token.first, parser->token.last, parser->user_data))
 		{
 			return 0;
 		}	
@@ -1533,10 +1556,9 @@ static int PDS_parse_sequence(PDS_parser *parser)
 			{
 				++parser->current;
 				++depth;
-				ret = parser->sequence_begin(parser->token.first, parser->token.last, parser->user_data);
-				if(!ret)
+				if(0 == parser->sequence_begin(parser->token.first, parser->token.last, parser->user_data))
 				{
-					break;
+					return 0;
 				}
 			}
 			else
@@ -1546,10 +1568,9 @@ static int PDS_parse_sequence(PDS_parser *parser)
 				{
 					if(0 != parser->sequence_element)
 					{
-						ret = parser->sequence_element(&parser->scalar, parser->user_data);
-						if(!ret)
+						if(0 == parser->sequence_element(&parser->scalar, parser->user_data))
 						{
-							break;
+							return 0;
 						}
 					}
 					ret = PDS_skip_whitespaces(parser);
@@ -1561,10 +1582,9 @@ static int PDS_parse_sequence(PDS_parser *parser)
 							--depth;
 							if(0 != parser->sequence_end)
 							{
-								ret = parser->sequence_end(parser->user_data);
-								if(!ret)
+								if(0 == parser->sequence_end(parser->user_data))
 								{
-									break;
+									return 0;
 								}
 							}
 							if(depth)
