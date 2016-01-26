@@ -1,6 +1,8 @@
-#include "test.h"
-
 #include <pds.h>
+
+#include "test.h"
+#include "utils.h"
+
 #define PDS_IMPL
 #include <pds.h>
 
@@ -42,76 +44,11 @@ int sequence_element(const PDS_scalar *scalar, void *user_data)
 	int ret;
 	state_t *state = (state_t*)user_data;
 	const expected_t *expected = state->expected;
-	const PDS_scalar *expected_scalar = 0;	
 	if(state->index >= expected->count)
 	{
 		return 0;
 	}
-	expected_scalar = &(expected->data[state->index]);
-	if(scalar->type != expected_scalar->type)
-	{
-		return 0;
-	}
-	ret = 0;
-	switch(scalar->type)
-	{
-		case PDS_INTEGER_VALUE:
-			if(scalar->integer.value == expected_scalar->integer.value)
-			{
-				if(    (scalar->integer.unit.first && expected_scalar->integer.unit.first)
-				    && (scalar->integer.unit.last  && expected_scalar->integer.unit.last ) )
-				{
-					ret = PDS_string_compare(scalar->integer.unit.first, scalar->integer.unit.last, 
-					                         expected_scalar->integer.unit.first, expected_scalar->integer.unit.last);
-				}
-				else if(    (0 == scalar->integer.unit.first) && (0 == expected_scalar->integer.unit.first)
-                         && (0 == expected_scalar->integer.unit.first) && (0 == expected_scalar->integer.unit.last) )
-				{
-					ret = 1;
-				} 
-			}
-			break;
-		case PDS_REAL_VALUE:
-			if(scalar->real.value == expected_scalar->real.value)
-			{
-				if(    (scalar->real.unit.first && expected_scalar->real.unit.first)
-				    && (scalar->real.unit.last  && expected_scalar->real.unit.last ) )
-				{
-					ret = PDS_string_compare(scalar->real.unit.first, scalar->real.unit.last, 
-					                         expected_scalar->real.unit.first, expected_scalar->real.unit.last);
-				}
-				else if(    (0 == scalar->real.unit.first) && (0 == expected_scalar->real.unit.first)
-                         && (0 == expected_scalar->real.unit.first) && (0 == expected_scalar->real.unit.last) )
-				{
-					ret = 1;
-				} 
-			}
-			break;
-		case PDS_DATE_TIME_VALUE:
-			if(   (scalar->date_time.time_type == expected_scalar->date_time.time_type)
-			   && (scalar->date_time.year == expected_scalar->date_time.year) 
-			   && (scalar->date_time.day == expected_scalar->date_time.day) 
-			   && (scalar->date_time.month == expected_scalar->date_time.month) 
-			   && (scalar->date_time.hour == expected_scalar->date_time.hour) 
-			   && (scalar->date_time.minute == expected_scalar->date_time.minute) 
-			   && (scalar->date_time.second == expected_scalar->date_time.second) 
-			   && (scalar->date_time.microsecond == expected_scalar->date_time.microsecond) 
-			   && (scalar->date_time.hour_offset == expected_scalar->date_time.hour_offset) 
-			   && (scalar->date_time.minute_offset == expected_scalar->date_time.minute_offset) )
-			{
-				ret = 1;
-			}
-			break;
-		case PDS_SYMBOLIC_VALUE:
-			ret = PDS_string_compare(scalar->symbolic.first, scalar->symbolic.last, expected_scalar->symbolic.first, expected_scalar->symbolic.last);
-			break;
-		case PDS_TEXT_STRING_VALUE:
-			ret = PDS_string_compare(scalar->text.first, scalar->text.last, expected_scalar->text.first, expected_scalar->text.last);
-			break;
-		case PDS_IDENTIFIER_VALUE:
-			ret = PDS_string_compare(scalar->identifier.first, scalar->identifier.last, expected_scalar->identifier.first, expected_scalar->identifier.last);
-			break;
-	}
+	ret = compare_scalar(scalar, &(expected->data[state->index]));
 	state->index++;
 	return ret;
 }

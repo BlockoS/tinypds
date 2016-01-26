@@ -1473,14 +1473,8 @@ static int PDS_parse_set(PDS_parser *parser)
 	if('}' == *parser->current)
 	{
 		parser->current++;
-		if(0 == parser->set_end)
-		{
-			if(0 == parser->set_end(parser->user_data))
-			{
-				return 0;
-			}
-		}
-		return 1;
+		PDS_error(parser, PDS_INVALID_VALUE, "empty set");
+		return 0;
 	}
 
 	while(ret && (parser->current<=parser->last))
