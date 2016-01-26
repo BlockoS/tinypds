@@ -208,6 +208,41 @@ int main()
 		}
 	};
 
+	const PDS_scalar failure[] = 
+	{
+		{	.integer.type  = PDS_INTEGER_VALUE,
+			.integer.value = 1,
+			.integer.unit.first = 0,
+			.integer.unit.last  = 0
+		},
+		{	.integer.type  = PDS_INTEGER_VALUE,
+			.integer.value = 2,
+			.integer.unit.first = 0,
+			.integer.unit.last  = 0
+		},
+		{	.integer.type  = PDS_INTEGER_VALUE,
+			.integer.value = 3,
+			.integer.unit.first = 0,
+			.integer.unit.last  = 0
+		},
+		{	.integer.type  = PDS_INTEGER_VALUE,
+			.integer.value = 4,
+			.integer.unit.first = 0,
+			.integer.unit.last  = 0
+		},
+		{	.integer.type  = PDS_INTEGER_VALUE,
+			.integer.value = 5,
+			.integer.unit.first = 0,
+			.integer.unit.last  = 0
+		},
+		{	.integer.type  = PDS_INTEGER_VALUE,
+			.integer.value = 6,
+			.integer.unit.first = 0,
+			.integer.unit.last  = 0
+		}
+	};
+
+
 	const expected_t sequences[] = 
 	{
 		{	.depth = 1,
@@ -220,13 +255,25 @@ int main()
 			.count = 9,
 			.name  = "matrix",
 			.data  = sequence_2D
+		},
+		{
+			.depth = 2,
+			.count = 6,
+			.name  = "failure",
+			.data  = failure
 		}
 	};
     
 	begin_test_data(const expected_t*)
 		test_data("   dummy  = \t( 51, 8 <Km>, \t117, 9.2 <Km>)\r\n", 44, &sequences[0], PDS_OK),
 		test_data("matrix = (\r\n\t(4,2048,.6),\r\n\t(14,1024,1.2),\r\n\t(24,256,2.4) )\r\n", 61, &sequences[1], PDS_OK),
- // [todo] failures
+		test_data("failure = (\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
+		test_data("failure = ()\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
+		test_data("failure = (())\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
+		test_data("failure = ((1,2)\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
+		test_data("failure = (1,,3),\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
+		test_data("failure = ((1,2,3,),(4,5,6))\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
+		test_data("failure = ((1,2,3),(4,5,6)\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
 	end_test_data()
 
 	PDS_parser parser;
@@ -238,7 +285,7 @@ int main()
 	int i;
     test_foreach(i)
 	{
-		state_t state = { .depth = 0, .index = 0, .expected = &sequences[i] };
+		state_t state = { .depth = 0, .index = 0, .expected = test_expected(i) };
 
 		parser.line      = 1;
         parser.first     = test_str(i);

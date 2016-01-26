@@ -1434,7 +1434,8 @@ static int PDS_parse_scalar_value(PDS_parser *parser)
 			}
 			else
 			{
-				// [todo] error?
+				PDS_error(parser, PDS_INVALID_VALUE, "invalid scalar value");
+
 			}
 			break;
 	}
@@ -1726,8 +1727,8 @@ static int PDS_parse_statement(PDS_parser *parser)
 			}
 			break;
 		default:
-		// [todo] error;
-		return 0;
+		// [todo] error message
+			return 0;
 	}
 
 	int line = parser->line;
