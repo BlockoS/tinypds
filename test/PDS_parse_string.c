@@ -22,11 +22,11 @@ int main()
 	int i;
     test_foreach(i)
 	{
-		parser.status  = PDS_OK;
-        parser.first   = test_str(i);
-        parser.last    = parser.first + strlen(parser.first) - 1;
-		parser.current = parser.first;
-		parser.line    = 0;
+		parser.status   = PDS_OK;
+        parser.first    = test_str(i);
+        parser.last     = parser.first + strlen(parser.first) - 1;
+		parser.current  = parser.first;
+		parser.line_num = 1;
  
 		int ret = PDS_parse_string(&parser);
 		

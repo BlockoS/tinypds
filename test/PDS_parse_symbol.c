@@ -24,11 +24,11 @@ int main()
 	{
 		parser.scalar.type = PDS_UNKNOWN_VALUE;
 
-		parser.line    = 1;
-        parser.first   = test_str(i);
-        parser.last    = parser.first + strlen(parser.first) - 1;
-        parser.current = parser.first;
-		parser.status  = PDS_OK;
+		parser.line_num = 1;
+        parser.first    = test_str(i);
+        parser.last     = parser.first + strlen(parser.first) - 1;
+        parser.current  = parser.first;
+		parser.status   = PDS_OK;
         
 		int ret = PDS_parse_symbol(&parser);
 		

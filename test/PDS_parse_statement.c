@@ -9,6 +9,7 @@
 int main()
 {
     begin_test_data(int32_t)
+// [todo]
 #if 0
         test_data(" \r\n        group\t = dummy_group_0\r\n", 20, 1, PDS_OK ),
         test_data(       "end_group=dummy_group_0\t    \r\n", 20, 1, PDS_OK ),
@@ -38,11 +39,11 @@ int main()
 	int i;
     test_foreach(i)
 	{
-		parser.line    = 1;
-        parser.first   = test_str(i);
-        parser.last    = parser.first + strlen(parser.first) - 1;
-        parser.current = parser.first;
-		parser.status  = PDS_OK;
+		parser.line_num = 1;
+        parser.first    = test_str(i);
+        parser.last     = parser.first + strlen(parser.first) - 1;
+        parser.current  = parser.first;
+		parser.status   = PDS_OK;
         
 		int ret = PDS_parse_statement(&parser);
         check(test_status(i) == parser.status);

@@ -26,11 +26,11 @@ int main()
     int i;
     test_foreach(i)
 	{
-		parser.line    = 1;
-        parser.first   = test_str(i); 
-        parser.last    = parser.first + strlen(parser.first) - 1; 
-        parser.current = parser.first; 
-        parser.status  = PDS_OK; 
+		parser.line_num = 1;
+        parser.first    = test_str(i); 
+        parser.last     = parser.first + strlen(parser.first) - 1; 
+        parser.current  = parser.first; 
+        parser.status   = PDS_OK; 
     
         int ret = PDS_parse_real(&parser);
         check(test_status(i) == parser.status);

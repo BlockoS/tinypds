@@ -13,6 +13,7 @@ extern "C" {
  */
 enum PDS_STATUS
 {
+	PDS_END = -1,
     PDS_OK = 0,
     PDS_INVALID_VALUE,
     PDS_INVALID_RANGE,
@@ -124,18 +125,101 @@ typedef union
 	/** Identifier. **/
 	PDS_string identifier;
 } PDS_scalar;
-
-// [todo]
+/**
+ * PDS token type.
+ * These types correspond to the type of assignment they belong to.
+ */
+enum PDS_TOKEN_TYPE
+{
+	PDS_TOKEN_UNKNOWN = 0,
+	PDS_TOKEN_ATTRIBUTE,
+	PDS_TOKEN_POINTER,
+	PDS_TOKEN_GROUP,
+	PDS_TOKEN_OBJECT,
+	PDS_TOKEN_END,
+};
+/**
+ * PDS token flag.
+ */
+enum PDS_TOKEN_FLAG
+{
+	PDS_TOKEN_FLAG_NONE = 0,
+	PDS_TOKEN_FLAG_BEGIN,
+	PDS_TOKEN_FLAG_END
+};
+/**
+ * PDS token.
+ */
+typedef struct
+{
+	/** Pointer to the first character of the token. **/ 
+	const char *first;
+	/** Pointer to the last character of the token. **/
+	const char *last;
+	/** Token type (@see PDS_TOKEN_TYPE). **/
+	int type;
+	/** Flag (begin/end, ...). **/
+	int flag;
+} PDS_token;
+/** Attribute callback **/
 typedef int  (*PDS_attribute_callback) (const char *first, const char *last, const PDS_scalar *scalar, void *user_data);
-// [todo]
+/** Collection/definition start callback. **/
 typedef int  (*PDS_collection_begin_callback) (const char *first, const char *last, void *user_data);
-// [todo]
+/** Collection element callback. **/
 typedef int  (*PDS_collection_element_callback) (const PDS_scalar *scalar, void *user_data);
-// [todo]
+/** Collection/definition end callback. **/
 typedef int  (*PDS_collection_end_callback) (const char *first, const char *last, void *user_data);
-// [todo]
+/** Error callback. **/
 typedef void (*PDS_error_callback)(int line, const char *text, void *user_data);
-
+/**
+ * PSD parser.
+ */
+typedef struct
+{
+	/** Current status (@see PDS_STATUS). **/
+	int status;
+	/** Pointer to the first character of the input text. **/
+	const char *first;
+	/** Pointer to the last character of the input text. **/
+	const char *last;
+	/** Pointer to the current character. **/
+	const char *current;
+	/** Pointer to the beginning of the current line. **/
+	const char *line;
+	/** Number of the line being parsed.**/
+	int line_num;
+	/** User data. **/
+	void *user_data;
+	// [todo] scratchpad mem
+	/** Current token. **/
+	PDS_token token;
+	/** Current scalar value. **/
+	PDS_scalar scalar;
+	/** New attribute callback. **/
+	PDS_attribute_callback attribute;
+	/** New pointer callback. **/
+	PDS_attribute_callback pointer;
+	/** @var PDS_parser::set Set callbacks. **/	
+	/** @var PDS_parser::sequence Sequence callbacks. **/	
+	struct
+	{	/** Collection start callback. **/
+		PDS_collection_begin_callback begin;
+		/** Collection element callback. **/
+		PDS_collection_element_callback element;
+		/** Collection end callback. **/
+		PDS_collection_end_callback end;
+	} set, sequence;
+	/** @var PDS_parser::group Group callbacks. **/	
+	/** @var PDS_parser::object Object callbacks. **/	
+	struct
+	{	/** Declaration start callback. **/
+		PDS_collection_begin_callback begin;
+		/** Declaration end callback. **/
+		PDS_collection_end_callback end;
+	} group, object;
+	/** Display error message. **/
+	PDS_error_callback error;
+} PDS_parser;
 /**
  * Remove leading and trailing white spaces in a string.
  * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
@@ -175,8 +259,8 @@ int PDS_string_compare(const char *f0, const char *l0, const char *f1, const cha
  */
 int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, const char *l1);
 
-/* [todo] parser config struct ? */
-/* [todo] parser run */
+// [todo]
+int PDS_parse(PDS_parser *parser, const char *buffer, int len, void *user_data);
 
 #ifdef __cplusplus
 }
@@ -187,6 +271,8 @@ int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, cons
 /*****************************************************************************/
 
 #ifdef PDS_IMPL
+
+// [todo] macro for sanity check? assert?
 
 #define PDS_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -220,115 +306,17 @@ static inline int PDS_toupper(char c)
 {
 	return PDS_islower(c) ? ('A' + ((c)-'a')) : (c);
 }
+#if 0
 static int PDS_tolower(char c)
 {
 	return PDS_isupper(c) ? ('a' + ((c)-'A')) : (c);
 }
 
-#if 0
 static const char *PDS_special_chars    = "={}()+-<>.\"\'_,/*:#&^";
 static const char *PDS_spacing_chars    = " \t";
 static const char *PDS_format_effectors = "\r\n\f\v";
 static const char *PDS_other_chars      = "!$%;?@[]`|~";
 #endif
-
-/**
- * PDS token type.
- * These types correspond to the type of assignment they belong to.
- */
-enum PDS_TOKEN_TYPE
-{
-	PDS_TOKEN_UNKNOWN = 0,
-	PDS_TOKEN_ATTRIBUTE,
-	PDS_TOKEN_POINTER,
-	PDS_TOKEN_GROUP,
-	PDS_TOKEN_OBJECT,
-	PDS_TOKEN_END,
-};
-/**
- * PDS token flag.
- */
-enum PDS_TOKEN_FLAG
-{
-	PDS_TOKEN_FLAG_NONE = 0,
-	PDS_TOKEN_FLAG_BEGIN,
-	PDS_TOKEN_FLAG_END
-};
-/**
- * PDS token.
- */
-typedef struct
-{
-	/** Pointer to the first character of the token. **/ 
-	const char *first;
-	/** Pointer to the last character of the token. **/
-	const char *last;
-	/** Token type (@see PDS_TOKEN_TYPE). **/
-	int type;
-	/** Flag (begin/end, ...). **/
-	int flag;
-} PDS_token;
-/**
- * PSD parser.
- */
-typedef struct
-{
-	/** Current status (@see PDS_STATUS). **/
-	int status;
-	/** Pointer to the first character of the input text. **/
-	const char *first;
-	/** Pointer to the last character of the input text. **/
-	const char *last;
-	/** Pointer to the current character. **/
-	const char *current;
-	/** Line that is being parsed.**/
-	int line;
-	// [todo] pointer to the beginning of the line
-	
-	// [todo] scratchpad mem
-
-	/** Current token. **/
-	PDS_token token;
-	/** Current scalar value. **/
-	PDS_scalar scalar;
-	/** User data. **/
-	void *user_data;
-	
-	/** New attribute callback. **/
-	PDS_attribute_callback attribute;
-	/** New pointer callback. **/
-	PDS_attribute_callback pointer;
-	
-	/** Set start callback. **/
-	PDS_collection_begin_callback set_begin;
-	/** Set element callback. **/
-	PDS_collection_element_callback set_element;
-	/** Set end callback. **/
-	PDS_collection_end_callback set_end;
-
-	/** Sequence start callback. **/	
-	PDS_collection_begin_callback sequence_begin;
-	/** Sequence element callback. **/
-	PDS_collection_element_callback sequence_element;
-	/** Sequence end callback. **/
-	PDS_collection_end_callback sequence_end;
-
-	/** Group start callback. **/
-	PDS_collection_begin_callback group_begin;
-	/** Group end callback. **/
-	PDS_collection_end_callback group_end;
-
-	/** Object start calback. **/
-	PDS_collection_begin_callback object_begin;
-	/** Object end callback. **/
-	PDS_collection_end_callback object_end;
-	
-	/** Display error message. **/
-	PDS_error_callback error;
-} PDS_parser;
-
-// [todo] create
-// [todo] destroy
 
 /**
  * Set error and run error display callback.
@@ -341,7 +329,7 @@ static void PDS_error(PDS_parser *parser, int error, const char *message)
 	parser->status = error;
 	if(0 != parser->error)
 	{
-		parser->error(parser->line, message, parser->user_data);
+		parser->error(parser->line_num, message, parser->user_data);
 	}
 }
 /**
@@ -367,7 +355,7 @@ static int PDS_skip_whitespaces(PDS_parser *parser)
 		{
 			if('\n' == *parser->current)
 			{
-				++parser->line; 
+				++parser->line_num; 
 			}
 		}
 		/* Skip comment. */
@@ -952,7 +940,7 @@ static int PDS_parse_string(PDS_parser *parser)
 		}
 		else if('\n' == *first)
 		{
-			++parser->line;
+			++parser->line_num;
 		} 
 	}
 	
@@ -1448,8 +1436,8 @@ static int PDS_parse_scalar_value(PDS_parser *parser)
 }
 /**
  * Parse a value set.
- * set_begin, set_end callbacks are called at the beginning and end of each sets.
- * set_element is called for each set element.
+ * set.begin, set.end callbacks are called at the beginning and end of each sets.
+ * set.element is called for each set element.
  * @param [in][out] parser Parser.
  * @return 1 if a set was succesfully parsed, 0 otherwise.
  */
@@ -1466,9 +1454,9 @@ static int PDS_parse_set(PDS_parser *parser)
 		PDS_error(parser, PDS_INVALID_VALUE, "missing set separator");
 		return 0;
 	}
-	if(0 != parser->set_begin)
+	if(0 != parser->set.begin)
 	{
-		if(0 == parser->set_begin(parser->token.first, parser->token.last, parser->user_data))
+		if(0 == parser->set.begin(parser->token.first, parser->token.last, parser->user_data))
 		{
 			return 0;
 		}
@@ -1490,9 +1478,9 @@ static int PDS_parse_set(PDS_parser *parser)
 			ret = PDS_parse_scalar_value(parser);
 			if(ret)
 			{
-				if(0 != parser->set_element)
+				if(0 != parser->set.element)
 				{
-					if(0 == parser->set_element(&parser->scalar, parser->user_data))
+					if(0 == parser->set.element(&parser->scalar, parser->user_data))
 					{
 						return 0;
 					}
@@ -1503,9 +1491,9 @@ static int PDS_parse_set(PDS_parser *parser)
 					char c = *parser->current++;
 					if('}' == c)
 					{
-						if(0 != parser->set_end)
+						if(0 != parser->set.end)
 						{
-							if(0 == parser->set_end(parser->token.first, parser->token.last, parser->user_data))
+							if(0 == parser->set.end(parser->token.first, parser->token.last, parser->user_data))
 							{
 								return 0;
 							}
@@ -1525,8 +1513,8 @@ static int PDS_parse_set(PDS_parser *parser)
 }
 /**
  * Parse a multidimensional sequence.
- * sequence_begin, sequence_end callbacks are called at the beginning and end of each sequences.
- * sequence_element is called for each sequence element.
+ * sequence.begin, sequence.end callbacks are called at the beginning and end of each sequences.
+ * sequence.element is called for each sequence element.
  * @param [in][out] parser Parser.
  * @return 1 if a multidimensional sequence was succesfully parsed, 0 otherwise.
  */
@@ -1544,9 +1532,9 @@ static int PDS_parse_sequence(PDS_parser *parser)
 		PDS_error(parser, PDS_INVALID_VALUE, "missing sequence separator");
 		return 0;
 	}
-	if(0 != parser->sequence_begin)
+	if(0 != parser->sequence.begin)
 	{
-		if(0 == parser->sequence_begin(parser->token.first, parser->token.last, parser->user_data))
+		if(0 == parser->sequence.begin(parser->token.first, parser->token.last, parser->user_data))
 		{
 			return 0;
 		}	
@@ -1560,7 +1548,7 @@ static int PDS_parse_sequence(PDS_parser *parser)
 			{
 				++parser->current;
 				++depth;
-				if(0 == parser->sequence_begin(parser->token.first, parser->token.last, parser->user_data))
+				if(0 == parser->sequence.begin(parser->token.first, parser->token.last, parser->user_data))
 				{
 					return 0;
 				}
@@ -1570,9 +1558,9 @@ static int PDS_parse_sequence(PDS_parser *parser)
 				ret = PDS_parse_scalar_value(parser);
 				if(ret)
 				{
-					if(0 != parser->sequence_element)
+					if(0 != parser->sequence.element)
 					{
-						if(0 == parser->sequence_element(&parser->scalar, parser->user_data))
+						if(0 == parser->sequence.element(&parser->scalar, parser->user_data))
 						{
 							return 0;
 						}
@@ -1584,9 +1572,9 @@ static int PDS_parse_sequence(PDS_parser *parser)
 						while(((c = *parser->current++) == ')') && (depth > 0))
 						{
 							--depth;
-							if(0 != parser->sequence_end)
+							if(0 != parser->sequence.end)
 							{
-								if(0 == parser->sequence_end(parser->token.first, parser->token.last, parser->user_data))
+								if(0 == parser->sequence.end(parser->token.first, parser->token.last, parser->user_data))
 								{
 									return 0;
 								}
@@ -1609,9 +1597,12 @@ static int PDS_parse_sequence(PDS_parser *parser)
 	return ret;
 }
 /**
- * [todo]
+ * Parse right hand side (rhs) value.
+ * A rhs value can be a sequence, a set or a single scalar value.
+ * @param [in][out] parser Parser.
+ * @return 1 upon success, 0 if an error occured.
  */
-static int parse_rhs(PDS_parser *parser)
+static int PDS_parse_rhs(PDS_parser *parser)
 {
 	int ret = 0;
 	char c;
@@ -1651,6 +1642,7 @@ static int parse_rhs(PDS_parser *parser)
 static int PDS_parse_statement(PDS_parser *parser)
 {
 	int ret;
+	int line;
 	if(PDS_OK != parser->status)
 	{
 		return 0;
@@ -1667,8 +1659,23 @@ static int PDS_parse_statement(PDS_parser *parser)
 	{
 		PDS_error(parser, parser->status, "invalid left-hand value");
 		return 0;
+	}	
+	if(PDS_TOKEN_END == parser->token.type)
+	{
+		line = parser->line_num;
+		if(!PDS_skip_whitespaces(parser))
+		{
+			return 0;
+		}
+		/* Check for new line. */
+		if(parser->line_num <= line)
+		{
+			PDS_error(parser, PDS_INVALID_VALUE, "no newline at the end of statement");
+			return 0;	
+		}
+		parser->status = PDS_END;
+		return 1;
 	}
-	// [todo] if (END) { STOP }
 	
 	ret = PDS_skip_whitespaces(parser);
 	if(!ret)
@@ -1693,7 +1700,7 @@ static int PDS_parse_statement(PDS_parser *parser)
 	{
 		case PDS_TOKEN_ATTRIBUTE:
 		case PDS_TOKEN_POINTER:
-			if(0 == parse_rhs(parser))
+			if(0 == PDS_parse_rhs(parser))
 			{
 				PDS_error(parser, parser->status, "invalid right value");
 				return 0;
@@ -1713,11 +1720,11 @@ static int PDS_parse_statement(PDS_parser *parser)
 				parser->scalar.type = PDS_IDENTIFIER_VALUE;
 				if(PDS_TOKEN_GROUP == parser->token.type)
 				{
-					callback = (PDS_TOKEN_FLAG_BEGIN == parser->token.flag) ? parser->group_begin : parser->group_end;
+					callback = (PDS_TOKEN_FLAG_BEGIN == parser->token.flag) ? parser->group.begin : parser->group.end;
 				}
 				else
 				{
-					callback = (PDS_TOKEN_FLAG_BEGIN == parser->token.flag) ? parser->object_begin : parser->object_end;
+					callback = (PDS_TOKEN_FLAG_BEGIN == parser->token.flag) ? parser->object.begin : parser->object.end;
 				}
 				if(0 != callback)
 				{
@@ -1726,24 +1733,71 @@ static int PDS_parse_statement(PDS_parser *parser)
 			}
 			break;
 		default:
-		// [todo] error message
+			PDS_error(parser, PDS_INVALID_VALUE, "unknown token type");
 			return 0;
 	}
 
-	int line = parser->line;
-	ret = PDS_skip_whitespaces(parser);
-	if(!ret)
+	line = parser->line_num;
+	if(!PDS_skip_whitespaces(parser))
 	{
 		return 0;
 	}
 	/* Check for new line. */
-	if(parser->line <= line)
+	if(parser->line_num <= line)
 	{
 		PDS_error(parser, PDS_INVALID_VALUE, "no newline at the end of statement");
 		return 0;	
 	}
-
 	return 1;
+}
+// [todo]
+int PDS_parse(PDS_parser *parser, const char *buffer, int len, void *user_data)
+{
+	const char* pds_version_name_first = "PDS_VERSION_ID";
+	const char* pds_version_name_last  = pds_version_name_first + PDS_ARRAY_SIZE(pds_version_name_first) - 1;
+	const char* pds_version_id_first = "PDS3";
+	const char* pds_version_id_last  = pds_version_id_first + PDS_ARRAY_SIZE(pds_version_id_first) - 1;
+
+	int ret;
+	
+	/* Sanity check. */
+	if((0 == buffer) || (0 == len))
+	{
+		return 0;
+	}
+	parser->line = parser->current = parser->first = buffer;
+	parser->last = buffer + len;
+	parser->line_num = 1;
+	parser->user_data = user_data;
+	parser->status = PDS_OK;
+
+	/* The first statement must be the PDS_VERSION_ID attribute. */
+	if(!PDS_parse_statement(parser))
+	{
+		return 0;
+	}
+	if(!PDS_string_case_compare(parser->token.first, parser->token.last, pds_version_name_first, pds_version_name_last))
+	{
+		PDS_error(parser, PDS_INVALID_VALUE, "a PDS file must start with PDS_VERSION_ID");
+		return 0;
+	}
+	/* Check version. */
+	if(PDS_IDENTIFIER_VALUE != parser->scalar.type)
+	{
+		PDS_error(parser, PDS_INVALID_VALUE, "invalid value type for PDS_VERSION_ID");
+		return 0;
+	}
+	if(!PDS_string_case_compare(parser->scalar.identifier.first, parser->scalar.identifier.last, pds_version_id_first, pds_version_id_last))
+	{
+		PDS_error(parser, PDS_INVALID_VALUE, "invalid PDS version id");
+		return 0;
+	}	
+	/* Parse the remaining. */	
+	for(ret=1; ret && (PDS_OK == parser->status); )
+	{
+		ret = PDS_parse_statement(parser);
+	}	
+	return ret;
 }
 
 #endif /* PDS_IMPL */

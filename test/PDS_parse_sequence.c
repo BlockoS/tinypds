@@ -220,16 +220,16 @@ int main()
 
 	PDS_parser parser;
 	parser.error = dummy_error;
-	parser.sequence_begin   = sequence_begin;
-	parser.sequence_element = sequence_element;
-	parser.sequence_end     = sequence_end;
+	parser.sequence.begin   = sequence_begin;
+	parser.sequence.element = sequence_element;
+	parser.sequence.end     = sequence_end;
 
 	int i;
     test_foreach(i)
 	{
 		state_t state = { .depth = 0, .index = 0, .expected = test_expected(i) };
 
-		parser.line      = 1;
+		parser.line_num  = 1;
         parser.first     = test_str(i);
         parser.last      = parser.first + strlen(parser.first) - 1;
         parser.current   = parser.first;
