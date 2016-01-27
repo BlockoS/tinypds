@@ -18,13 +18,11 @@ typedef struct
 	const expected_t *expected;
 } state_t;
  
-int set_begin(const char* first, const char *last, void *user_data)
+int set_begin(const char *first, const char *last, void *user_data)
 {
-	int ret;
 	state_t *state = (state_t*)user_data;
 	const expected_t *expected = state->expected;
-	ret = PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last);
-	return ret;
+	return PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last);
 }
 
 int set_element(const PDS_scalar *scalar, void *user_data)
@@ -41,29 +39,31 @@ int set_element(const PDS_scalar *scalar, void *user_data)
 	return ret;
 }
 
-int set_end(void *user_data)
+int set_end(const char *first, const char *last, void *user_data)
 {
-	return 1;
+	state_t *state = (state_t*)user_data;
+	const expected_t *expected = state->expected;
+	return PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last);
 }
 
 int main()
 {
 	const PDS_scalar set[] = 
 	{
-		{	.integer.type  = PDS_REAL_VALUE,
-			.integer.value = 123.8,
-			.integer.unit.first = 0,
-			.integer.unit.last  = 0
+		{	.real.type  = PDS_REAL_VALUE,
+			.real.value = 123.8,
+			.real.unit.first = 0,
+			.real.unit.last  = 0
 		},
-		{	.integer.type  = PDS_REAL_VALUE,
-			.integer.value = 90.0,
-			.integer.unit.first = 0,
-			.integer.unit.last  = 0
+		{	.real.type  = PDS_REAL_VALUE,
+			.real.value = 90.0,
+			.real.unit.first = 0,
+			.real.unit.last  = 0
 		},
-		{	.integer.type  = PDS_REAL_VALUE,
-			.integer.value = 0.125,
-			.integer.unit.first = 0,
-			.integer.unit.last  = 0
+		{	.real.type  = PDS_REAL_VALUE,
+			.real.value = 0.125,
+			.real.unit.first = 0,
+			.real.unit.last  = 0
 		},
 		{	.real.type  = PDS_REAL_VALUE,
 			.real.value = 0.02,

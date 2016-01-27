@@ -21,12 +21,11 @@ typedef struct
 	const expected_t *expected;
 } state_t;
  
-int sequence_begin(const char* first, const char *last, void *user_data)
+int sequence_begin(const char *first, const char *last, void *user_data)
 {
 	int ret;
 	state_t *state = (state_t*)user_data;
-	const expected_t *expected = state->expected;
-	
+	const expected_t *expected = state->expected;	
 	ret = PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last);
 	if(ret)
 	{
@@ -53,15 +52,21 @@ int sequence_element(const PDS_scalar *scalar, void *user_data)
 	return ret;
 }
 
-int sequence_end(void *user_data)
+int sequence_end(const char *first, const char *last, void *user_data)
 {
+	int ret;
 	state_t *state = (state_t*)user_data;
-	state->depth--;
-	if(state->depth < 0)
+	const expected_t *expected = state->expected;	
+	ret = PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last);
+	if(ret)
 	{
-		return 0;
+		state->depth--;
+		if(state->depth >= 0)
+		{
+			ret = 1;
+		}
 	}
-	return 1;
+	return ret;
 }
 
 int main()
