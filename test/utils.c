@@ -21,8 +21,19 @@ void print_scalar(const PDS_scalar *scalar)
             break;                                                                                            
         case PDS_DATE_TIME_VALUE:                                                                             
             printf("date: ");
-			// [todo]                                                                                 
-            break;                                                                                            
+            printf("%04d-%02d-%02d ", scalar->date_time.year, scalar->date_time.month, scalar->date_time.day);
+            printf("%02d:%02d:%02d:%02d ", scalar->date_time.hour, scalar->date_time.minute,
+			                               scalar->date_time.second, scalar->date_time.microsecond);
+			if(PDS_ZONED_TIME == scalar->date_time.time_type)
+			{
+				printf("%02d:%02d ", scalar->date_time.hour_offset, scalar->date_time.minute_offset);
+			}
+			else if(PDS_UTC_TIME == scalar->date_time.time_type)
+			{
+				printf("UTC");
+			}
+			printf("\n");
+			break;                                                                                            
         case PDS_TEXT_STRING_VALUE:                                                                           
             printf("text: ");                                                                                 
             print_string(scalar->text.first, scalar->text.last);                                              
