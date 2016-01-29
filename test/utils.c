@@ -258,3 +258,66 @@ int sequence_end_callback(const char *first, const char *last, void *user_data)
 	printf(")\n");	
 	return 1;
 }
+
+static int declaration_check_name(const char *what, const char *first, const char *last, void *user_data)
+{
+	state_t *state = (state_t*)user_data;
+	const expected_t *expected = state->expected;
+	const PDS_scalar *scalar;	
+	int i = state->index++;
+	if(i >= expected->count)
+	{
+		fprintf(stderr, "too many elements\n");
+		return 0;
+	}
+	scalar = &expected->scalar[i];
+	if(!PDS_string_compare(scalar->identifier.first, scalar->identifier.last, first, last))
+	{
+		fprintf(stderr, "%s name mismatch\n", what);
+		return 0;
+	}
+	return 1;
+}
+
+static int declaration_begin(const char *what, const char *first, const char *last, void *user_data)
+{
+	if(!declaration_check_name(what, first, last, user_data))
+	{
+		return 0;
+	}
+	printf("%s ", what);
+	print_string(first, last);
+	printf(" = [\n");
+	return 1;
+}
+
+static int declaration_end(const char *what, const char *first, const char *last, void *user_data)
+{
+	if(!declaration_check_name(what, first, last, user_data))
+	{
+		return 0;
+	}
+	printf("]\n");
+	return 1;
+}
+
+int group_begin_callback(const char *first, const char *last, void *user_data)
+{
+	return declaration_begin("group", first, last, user_data);
+}
+
+int group_end_callback(const char *first, const char *last, void *user_data)
+{
+	return declaration_end("group", first, last, user_data);
+}
+
+int object_begin_callback(const char *first, const char *last, void *user_data)
+{
+	return declaration_begin("object", first, last, user_data);
+}
+
+int object_end_callback(const char *first, const char *last, void *user_data)
+{
+	return declaration_end("object", first, last, user_data);
+}
+

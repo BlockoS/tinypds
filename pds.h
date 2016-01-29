@@ -1329,7 +1329,7 @@ static int PDS_parse_lhs(PDS_parser *parser)
 		return 1;
 	}
 	/* 2. group/object/end */
-	for(lhs->last=lhs->first; (lhs->last<=parser->last) && !(PDS_isspace(*lhs->last) || ('/'==*lhs->last)); lhs->last++)
+	for(lhs->last=lhs->first; (lhs->last<=parser->last) && !(PDS_isspace(*lhs->last) || ('/'==*lhs->last) || ('='==*lhs->last)); lhs->last++)
 	{}
 	lhs->last--;
 	for(i=0; i<PDS_ARRAY_SIZE(lhs_parser); i++)
@@ -1718,7 +1718,8 @@ static int PDS_parse_statement(PDS_parser *parser)
 			break;
 		case PDS_TOKEN_GROUP:
 		case PDS_TOKEN_OBJECT:
-			{	
+			{
+				// [todo] check for nested group/objects and lonely end_group/end_object	
 				int (*callback)(const char*, const char*, void*);	
 				parser->scalar.identifier.first = PDS_parse_identifier(parser->current, parser->last, &parser->current, &parser->status);
 				if(PDS_OK != parser->status)
@@ -1738,7 +1739,7 @@ static int PDS_parse_statement(PDS_parser *parser)
 				}
 				if(0 != callback)
 				{
-					ret = callback(parser->token.first, parser->token.last, parser->user_data);
+					ret = callback(parser->scalar.identifier.first, parser->scalar.identifier.last, parser->user_data);
 				}
 			}
 			break;

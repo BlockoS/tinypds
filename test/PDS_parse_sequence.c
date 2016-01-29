@@ -121,7 +121,6 @@ int main()
 		}
 	};
 
-
 	const expected_t sequences[] = 
 	{
 		{	.depth  = 1,
