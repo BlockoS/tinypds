@@ -185,12 +185,11 @@ typedef struct
 	/** Pointer to the current character. **/
 	const char *current;
 	/** Pointer to the beginning of the current line. **/
-	const char *line;
+	const char *line; // [todo]
 	/** Number of the line being parsed.**/
 	int line_num;
 	/** User data. **/
 	void *user_data;
-	// [todo] scratchpad mem
 	/** Current token. **/
 	PDS_token token;
 	/** Current scalar value. **/
@@ -355,7 +354,8 @@ static int PDS_skip_whitespaces(PDS_parser *parser)
 		{
 			if('\n' == *parser->current)
 			{
-				++parser->line_num; 
+				++parser->line_num;
+				parser->line = parser->current+1;
 			}
 		}
 		/* Skip comment. */
@@ -941,6 +941,7 @@ static int PDS_parse_string(PDS_parser *parser)
 		else if('\n' == *first)
 		{
 			++parser->line_num;
+			parser->line = first+1;
 		} 
 	}
 	
@@ -1393,7 +1394,7 @@ static int PDS_parse_scalar_value(PDS_parser *parser)
 			else if(PDS_isdigit(c) || ('-' == c) || ('+' == c) || ('.' == c))
 			{
 				const char *ptr = parser->current+1;
-				const char *eol = PDS_find_first(ptr, parser->last, '\n'); // [todo] store start and end of line in parser
+				const char *eol = PDS_find_first(ptr, parser->last, '\n');
 				if(0 == eol)
 				{
 					eol = parser->last;

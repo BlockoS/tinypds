@@ -5,38 +5,6 @@
 #define PDS_IMPL
 #include <pds.h>
 
-typedef struct
-{
-	const char *name;
-	const PDS_scalar *scalar;
-	int count;
-} expected_t;
-
-typedef struct
-{
-	int index;
-	const expected_t *expected;
-} state_t;
- 
-int dummy_attribute(const char* first, const char *last, const PDS_scalar *scalar, void *user_data)
-{
-	state_t *state = (state_t*)user_data;
-	const expected_t *expected = state->expected;
-	if(!PDS_string_compare(first, last, expected->name, expected->name+strlen(expected->name)-1))
-	{
-		fprintf(stderr, "scalar name mismatch\n");
-		return 0;
-	}
-	if(!compare_scalar(scalar, expected->scalar))
-	{
-		fprintf(stderr, "scalar value mismatch\n");
-		return 0;
-	}
-	printf("%s = ", expected->name);
-	print_scalar(scalar);
-	return 1;
-}
-  
 int main()
 {
 	const char *degrees = "DEGREES";
@@ -113,8 +81,8 @@ int main()
 	PDS_parser parser;
 	memset(&parser, 0, sizeof(PDS_parser));
 	parser.error = dummy_error;
-	parser.attribute = dummy_attribute;
-	parser.pointer = dummy_attribute;
+	parser.attribute = attribute_callback;
+	parser.pointer = attribute_callback;
 
 	int i;
     test_foreach(i)

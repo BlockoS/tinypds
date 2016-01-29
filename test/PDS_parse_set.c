@@ -4,48 +4,7 @@
 
 #define PDS_IMPL
 #include <pds.h>
-
-typedef struct
-{
-	int count;
-	const char *name;
-	const PDS_scalar *data;
-} expected_t;
-
-typedef struct
-{
-	int index;
-	const expected_t *expected;
-} state_t;
  
-int set_begin(const char *first, const char *last, void *user_data)
-{
-	state_t *state = (state_t*)user_data;
-	const expected_t *expected = state->expected;
-	return PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last);
-}
-
-int set_element(const PDS_scalar *scalar, void *user_data)
-{
-	int ret;
-	state_t *state = (state_t*)user_data;
-	const expected_t *expected = state->expected;
-	if(state->index >= expected->count)
-	{
-		return 0;
-	}
-	ret = compare_scalar(scalar, &(expected->data[state->index])); 
-	state->index++;
-	return ret;
-}
-
-int set_end(const char *first, const char *last, void *user_data)
-{
-	state_t *state = (state_t*)user_data;
-	const expected_t *expected = state->expected;
-	return PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last);
-}
-
 int main()
 {
 	const PDS_scalar data[] = 
@@ -95,13 +54,13 @@ int main()
 
 	const expected_t set[] = 
 	{
-		{   .count = 4,
-            .name  = "dummy",
-            .data  = &data[0]
+		{   .count  = 4,
+            .name   = "dummy",
+            .scalar = &data[0]
         },
-		{   .count = 6,
-			.name  = "failure",
-			.data  = &data[4]
+		{   .count  = 6,
+			.name   = "failure",
+			.scalar = &data[4]
 		}
 	};
     
@@ -117,9 +76,9 @@ int main()
 
 	PDS_parser parser;
 	parser.error = dummy_error;
-	parser.set.begin   = set_begin;
-	parser.set.element = set_element;
-	parser.set.end     = set_end;
+	parser.set.begin   = set_begin_callback;
+	parser.set.element = set_element_callback;
+	parser.set.end     = set_end_callback;
 
 	int i;
     test_foreach(i)

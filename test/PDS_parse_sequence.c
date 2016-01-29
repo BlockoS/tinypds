@@ -6,69 +6,6 @@
 #define PDS_IMPL
 #include <pds.h>
 
-typedef struct
-{
-	int depth;
-	int count;
-	const char *name;
-	const PDS_scalar *data;
-} expected_t;
-
-typedef struct
-{
-	int depth;
-	int index;
-	const expected_t *expected;
-} state_t;
- 
-int sequence_begin(const char *first, const char *last, void *user_data)
-{
-	int ret;
-	state_t *state = (state_t*)user_data;
-	const expected_t *expected = state->expected;	
-	ret = PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last);
-	if(ret)
-	{
-		state->depth++;
-		if(state->depth > expected->depth)
-		{
-			ret = 0;
-		}
-	}
-	return ret;
-}
-
-int sequence_element(const PDS_scalar *scalar, void *user_data)
-{
-	int ret;
-	state_t *state = (state_t*)user_data;
-	const expected_t *expected = state->expected;
-	if(state->index >= expected->count)
-	{
-		return 0;
-	}
-	ret = compare_scalar(scalar, &(expected->data[state->index]));
-	state->index++;
-	return ret;
-}
-
-int sequence_end(const char *first, const char *last, void *user_data)
-{
-	int ret;
-	state_t *state = (state_t*)user_data;
-	const expected_t *expected = state->expected;	
-	ret = PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last);
-	if(ret)
-	{
-		state->depth--;
-		if(state->depth >= 0)
-		{
-			ret = 1;
-		}
-	}
-	return ret;
-}
-
 int main()
 {
 	const char *unit_first = "Km";
@@ -187,22 +124,22 @@ int main()
 
 	const expected_t sequences[] = 
 	{
-		{	.depth = 1,
-			.count = 4,
-			.name  = "dummy",
-			.data  = sequence_1D
+		{	.depth  = 1,
+			.count  = 4,
+			.name   = "dummy",
+			.scalar = sequence_1D
 		},
 		{
-			.depth = 2,
-			.count = 9,
-			.name  = "matrix",
-			.data  = sequence_2D
+			.depth  = 2,
+			.count  = 9,
+			.name   = "matrix",
+			.scalar = sequence_2D
 		},
 		{
-			.depth = 2,
-			.count = 6,
-			.name  = "failure",
-			.data  = failure
+			.depth  = 2,
+			.count  = 6,
+			.name   = "failure",
+			.scalar = failure
 		}
 	};
     
@@ -220,9 +157,9 @@ int main()
 
 	PDS_parser parser;
 	parser.error = dummy_error;
-	parser.sequence.begin   = sequence_begin;
-	parser.sequence.element = sequence_element;
-	parser.sequence.end     = sequence_end;
+	parser.sequence.begin   = sequence_begin_callback;
+	parser.sequence.element = sequence_element_callback;
+	parser.sequence.end     = sequence_end_callback;
 
 	int i;
     test_foreach(i)
