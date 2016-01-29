@@ -39,7 +39,7 @@ int main()
 		{
 			check(PDS_SYMBOLIC_VALUE == parser.scalar.type);
 			check((test_str(i)+1) == parser.scalar.symbolic.first);
-			check((test_end(i)-1) == parser.scalar.symbolic.last);
+			check((test_end(i)-2) == parser.scalar.symbolic.last);
 		}
     }
     return EXIT_SUCCESS;

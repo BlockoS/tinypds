@@ -14,13 +14,20 @@ void print_scalar(const PDS_scalar *scalar)
     switch(scalar->type)                                                                                      
     {                                                                                                         
         case PDS_INTEGER_VALUE:                                                                               
-            printf("%d ", scalar->integer.value);                                                             
+            printf("%d ", scalar->integer.value);
+			if(scalar->integer.unit.first && scalar->integer.unit.last)
+			{
+				print_string(scalar->integer.unit.first, scalar->integer.unit.last);
+			}                                                          
             break;                                                                                            
         case PDS_REAL_VALUE:                                                                                  
             printf("%f ", scalar->real.value);                                                                
+			if(scalar->real.unit.first && scalar->real.unit.last)
+			{
+				print_string(scalar->real.unit.first, scalar->real.unit.last);
+			}                                                          
             break;                                                                                            
         case PDS_DATE_TIME_VALUE:                                                                             
-            printf("date: ");
             printf("%04d-%02d-%02d ", scalar->date_time.year, scalar->date_time.month, scalar->date_time.day);
             printf("%02d:%02d:%02d:%02d ", scalar->date_time.hour, scalar->date_time.minute,
 			                               scalar->date_time.second, scalar->date_time.microsecond);
@@ -32,21 +39,22 @@ void print_scalar(const PDS_scalar *scalar)
 			{
 				printf("UTC");
 			}
-			printf("\n");
 			break;                                                                                            
         case PDS_TEXT_STRING_VALUE:                                                                           
-            printf("text: ");                                                                                 
+            printf("\"");                                                                                 
             print_string(scalar->text.first, scalar->text.last);                                              
+            printf("\" ");                                                                                 
             break;                                                                                            
         case PDS_SYMBOLIC_VALUE:                                                                              
-            printf("literal: ");                                                                              
+            printf("\'");                                                                                 
             print_string(scalar->text.first, scalar->text.last);                                              
+            printf("\' ");                                                                                 
             break;                                                                                            
         case PDS_IDENTIFIER_VALUE:                                                                            
-            printf("id: ");                                                                                   
             print_string(scalar->identifier.first, scalar->identifier.last);                                  
             break;                                                                                            
     }                                                                                                         
+	printf("\n");
 }
 
 int compare_scalar(const PDS_scalar *s0, const PDS_scalar *s1)

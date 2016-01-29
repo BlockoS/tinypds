@@ -37,7 +37,7 @@ int main()
 		{
 			check(PDS_TEXT_STRING_VALUE == parser.scalar.type);
 			check((parser.first+1) == parser.scalar.text.first);
-			check((parser.current-1) == parser.scalar.text.last);
+			check((parser.current-2) == parser.scalar.text.last);
 		}
     }
     return EXIT_SUCCESS;

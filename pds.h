@@ -51,8 +51,8 @@ typedef struct
 {
 	/** Value type. Must be equal to PDS_INTEGER_VALUE. **/
 	int type;	
-	/** Measurement unit. **/
-	PDS_string unit;
+	/** @var PDS_integer::unit Measurement unit. **/
+	struct { const char *first, *last; } unit;
 	/** Integer value. **/
 	int32_t value;
 } PDS_integer;
@@ -63,8 +63,8 @@ typedef struct
 {
 	/** Value type. Must be equal to PDS_REAL_VALUE. **/
 	int type;	
-	/** Measurement unit. **/
-	PDS_string unit;
+	/** @var PDS_real::unit Measurement unit. **/
+	struct { const char *first, *last; } unit;
 	/** Real (floating-point) value. **/
 	double value;
 } PDS_real;
@@ -891,7 +891,7 @@ static int PDS_parse_symbol(PDS_parser *parser)
 		PDS_error(parser, PDS_INVALID_VALUE, "missing literal symbol delimiter");
 		return 0;
 	}
-	parser->scalar.symbolic.last = first;
+	parser->scalar.symbolic.last = first-1;
 	parser->scalar.type = PDS_SYMBOLIC_VALUE;
 	
 	parser->current = first+1;
@@ -951,7 +951,7 @@ static int PDS_parse_string(PDS_parser *parser)
 	}
 	
 	parser->scalar.type = PDS_TEXT_STRING_VALUE;
-	parser->scalar.text.last  = first;
+	parser->scalar.text.last  = first-1;
  
 	parser->current = first+1;
 	return 1;
@@ -1498,16 +1498,21 @@ static int PDS_parse_set(PDS_parser *parser)
 								return 0;
 							}
 						}
-						break;
+						return 1;
 					}
 					else if(',' != c)
 					{
-						ret = 0;
 						PDS_error(parser, PDS_INVALID_VALUE, "invalid element separator");
+						return 0;
 					}
 				}
 			}
 		}
+	}
+	if(parser->current > parser->last)
+	{
+		PDS_error(parser, PDS_INVALID_VALUE, "missing separator");
+		ret = 0;
 	}
 	return ret;
 }
@@ -1637,7 +1642,9 @@ static int PDS_parse_rhs(PDS_parser *parser)
 	return ret;
 }
 /**
- * [todo]
+ * Parse a single statement.
+ * @param [in][out] parser Parser.
+ * @return 1 if a valid statement was found, 0 otherwise.
  */
 static int PDS_parse_statement(PDS_parser *parser)
 {
@@ -1696,6 +1703,8 @@ static int PDS_parse_statement(PDS_parser *parser)
 		return 0;
 	}
 	
+	line = parser->line_num;
+	
 	switch(parser->token.type)
 	{
 		case PDS_TOKEN_ATTRIBUTE:
@@ -1737,7 +1746,6 @@ static int PDS_parse_statement(PDS_parser *parser)
 			return 0;
 	}
 
-	line = parser->line_num;
 	if(!PDS_skip_whitespaces(parser))
 	{
 		return 0;

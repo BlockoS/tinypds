@@ -48,7 +48,7 @@ int set_end(const char *first, const char *last, void *user_data)
 
 int main()
 {
-	const PDS_scalar set[] = 
+	const PDS_scalar data[] = 
 	{
 		{	.real.type  = PDS_REAL_VALUE,
 			.real.value = 123.8,
@@ -70,10 +70,6 @@ int main()
 			.real.unit.first = 0,
 			.real.unit.last  = 0
 		},
-	};
-
-	const PDS_scalar failure[] = 
-	{
 		{	.integer.type  = PDS_INTEGER_VALUE,
 			.integer.value = 1,
 			.integer.unit.first = 0,
@@ -97,30 +93,26 @@ int main()
 	};
 
 
-	const expected_t sequences[] = 
+	const expected_t set[] = 
 	{
-		{   .count = 0,
-            .name  = "empty",
-            .data  = set
+		{   .count = 4,
+            .name  = "dummy",
+            .data  = &data[0]
         },
-		{	.count = 4,
-			.name  = "dummy",
-			.data  = set
-		},
 		{   .count = 6,
 			.name  = "failure",
-			.data  = failure
+			.data  = &data[4]
 		}
 	};
     
 	begin_test_data(const expected_t*)
-		test_data("empty = { 123.8, 90.0, 0.125, 0.02 }\r\n", 13, &sequences[0], PDS_OK),
-		test_data("failure = {\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
-		test_data("failure = {}\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
-		test_data("failure = { \t, }\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
-		test_data("failure = {{}}\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
-		test_data("failure = {1,,3}\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
-		test_data("failure = {{1,2,3,4,5,6}}\r\n", 0, &sequences[2], PDS_INVALID_VALUE),
+		test_data("dummy = { 123.8, 90.0, 0.125, 0.02 }\r\n", 38, &set[0], PDS_OK),
+		test_data("failure = {\r\n", 0, &set[1], PDS_INVALID_VALUE),
+		test_data("failure = {}\r\n", 0, &set[1], PDS_INVALID_VALUE),
+		test_data("failure = { \t, }\r\n", 0, &set[1], PDS_INVALID_VALUE),
+		test_data("failure = {{}}\r\n", 0, &set[1], PDS_INVALID_VALUE),
+		test_data("failure = {1,,3}\r\n", 0, &set[1], PDS_INVALID_VALUE),
+		test_data("failure = {{1,2,3,4,5,6}}\r\n", 0, &set[1], PDS_INVALID_VALUE),
 	end_test_data()
 
 	PDS_parser parser;
@@ -140,7 +132,7 @@ int main()
         parser.current   = parser.first;
 		parser.status    = PDS_OK;
 		parser.user_data = &state;
-
+		
 		int ret = PDS_parse_statement(&parser);
         check(test_status(i) == parser.status);
         if(ret)
