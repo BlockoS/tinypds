@@ -729,30 +729,30 @@ static int PDS_parse_real(PDS_parser *parser)
             }
         }
         value += neg ? -decimal : decimal;
-        /* And lastly the exponent. */
-        exponent = 1;
-        if(('e' == *ptr) || ('E' == *ptr))
+    }
+    /* Check for exponent. */
+    exponent = 1;
+    if(('e' == *ptr) || ('E' == *ptr))
+    {
+        int64_t i;
+        int64_t n;
+        n = PDS_parse_int_base(ptr+1, parser->last, &ptr, 10, &parser->status);
+        if(PDS_OK != parser->status)
         {
-            int64_t i;
-            int64_t n;
-            n = PDS_parse_int_base(ptr+1, parser->last, &ptr, 10, &parser->status);
-            if(PDS_OK != parser->status)
-            {
-                PDS_error(parser, PDS_INVALID_VALUE, "invalid exponent value");
-                return 0;
-            }
-            if(n < 0)
-            {
-                for(i=0, div=1; i>n; --i, div*=10)
-                {}
-                value /= (double)div;
-            }
-            else
-            {
-                for(i=0, exponent=1; i<n; ++i, exponent*=10)
-                {}
-                value *= (double)exponent;
-            }
+            PDS_error(parser, PDS_INVALID_VALUE, "invalid exponent value");
+            return 0;
+        }
+        if(n < 0)
+        {
+            for(i=0, div=1; i>n; --i, div*=10)
+            {}
+            value /= (double)div;
+        }
+        else
+        {
+            for(i=0, exponent=1; i<n; ++i, exponent*=10)
+            {}
+            value *= (double)exponent;
         }
     }
     parser->current = ptr;
@@ -1447,7 +1447,8 @@ static int PDS_parse_scalar_value(PDS_parser *parser)
                 }
                 else
                 {
-                    if(('.' == c) || ('.' == *ptr))
+                    if(  (('.' == c   ) || ('e' == c   )) 
+                       ||(('.' == *ptr) || ('e' == *ptr)) )
                     {
                         ret = PDS_parse_real(parser);
                     }
