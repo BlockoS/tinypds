@@ -12,8 +12,7 @@ int main()
         test_data(            "\"simple string\" ", 15, 1, PDS_OK ),
         test_data("\"multi\r\nline\r\n\tstring\" ", 22, 1, PDS_OK ),
         test_data(   "\"Some\\\\escaped\\nchars\"", 22, 1, PDS_OK ),
-        test_data(  "\" I\nvalid \\espaced char\"",  0, 0, PDS_INVALID_VALUE ), 
-        test_data(         "\"\n\n\nSame here\\\"",  0, 0, PDS_INVALID_VALUE ), 
+        test_data(       "\" missing  delimiter  ",  0, 0, PDS_INVALID_VALUE ), 
     end_test_data()
 
     memset(&parser, 0, sizeof(PDS_parser));

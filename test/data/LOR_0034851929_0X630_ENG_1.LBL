@@ -1,0 +1,330 @@
+PDS_VERSION_ID       = PDS3                                                   
+                                                                              
+RECORD_TYPE          = FIXED_LENGTH                                           
+RECORD_BYTES         = 2880                                                   
+FILE_RECORDS         = 747                                                    
+                                                                              
+^HEADER = "LOR_0034851929_0X630_ENG_1.FIT"                                    
+^IMAGE = ("LOR_0034851929_0X630_ENG_1.FIT", 10)                               
+^EXTENSION_HISTOGRAM_HEADER = ("LOR_0034851929_0X630_ENG_1.FIT", 742)         
+^EXTENSION_HISTOGRAM_IMAGE = ("LOR_0034851929_0X630_ENG_1.FIT", 743)          
+^EXTENSION_ENCODED_FIRST34_HEADER = ("LOR_0034851929_0X630_ENG_1.FIT", 744)   
+^EXTENSION_ENCODED_FIRST34_IMAGE = ("LOR_0034851929_0X630_ENG_1.FIT", 745)    
+^EXTENSION_IMAGE_DESCRIPTOR_HEADER = ("LOR_0034851929_0X630_ENG_1.FIT", 746)  
+^EXTENSION_IMAGE_DESCRIPTOR_IMAGE = ("LOR_0034851929_0X630_ENG_1.FIT", 747)   
+NOTE = "                                                                      
+                                                                              
+                                                                              
+- Earth Mean Equator and Vernal Equinox of J2000 is the inertial              
+  reference frame used to specify observational geometry. Geometric           
+  parameters are based on best available data at time of product              
+  creation. Refer to the SPICE archive for the most current                   
+  observational geometry data.                                                
+                                                                              
+- All positions are relative to body centers                                  
+                                                                              
+- Target wrt S/C:  X/Y/Z & Range                                              
+  - Light time corrected for light originating from                           
+    JUPITER and received by S/C at observation                                
+    midpoint.                                                                 
+                                                                              
+- Sun wrt Target                                                              
+  - Light time corrected for light originating from                           
+    Sun, reflected off of JUPITER,                                            
+    and received by S/C at observation midpoint                               
+                                                                              
+- Sun wrt S/C                                                                 
+  - Light time corrected for light originating from                           
+    Sun and received by S/C at observation midpoint                           
+                                                                              
+- Earth wrt S/C                                                               
+  - Light time corrected for light originating from                           
+    Earth and received by S/C at observation midpoint                         
+                                                                              
+- Solar phase angle (relative to inverted boresight)                          
+"                                                                             
+                                                                              
+MISSION_NAME         = "NEW HORIZONS"                                         
+DATA_SET_ID          = "NH-J-LORRI-2-JUPITER-V1.1"                            
+PRODUCT_ID           = "LOR_0034851929_0X630_ENG_1"                           
+PRODUCER_INSTITUTION_NAME = "SOUTHWEST RESEARCH INSTITUTE"                    
+PRODUCT_TYPE         = "EDR"                                                  
+SOFTWARE_NAME        = "TOPDS 1.0"                                            
+MISSION_PHASE_NAME   = "JUPITER ENCOUNTER"                                    
+SEQUENCE_ID          = "JELR_01_JLRSPOT02"                                    
+TARGET_NAME          = "JUPITER"                                              
+                                                                              
+PRODUCT_CREATION_TIME = 2009-03-02T06:16:43                                   
+START_TIME           = 2007-02-27T03:13:31.365                                
+STOP_TIME            = 2007-02-27T03:13:31.368                                
+SPACECRAFT_CLOCK_CNT_PARTITION = 1                                            
+SPACECRAFT_CLOCK_START_COUNT   = "0034851928:48850"                           
+SPACECRAFT_CLOCK_STOP_COUNT    = "0034851928:49000"                           
+                                                                              
+INSTRUMENT_NAME="LONG RANGE RECONNAISSANCE IMAGER"                            
+INSTRUMENT_HOST_NAME = "NEW HORIZONS"                                         
+INSTRUMENT_ID        = "LORRI"                                                
+TELEMETRY_APPLICATION_ID = "0x630"                                            
+EXPOSURE_DURATION    = 0.003 <S>                                              
+FILTER_NAME          = "N/A"                                                  
+DETECTOR_ID          = "LORRI"                                                
+DETECTOR_TYPE        = "CCD"                                                  
+INST_CMPRS_TYPE      = "LOSSLESS"                                             
+                                                                              
+SC_TARGET_POSITION_VECTOR = (                                                 
+  898687.57 <KM>                                                              
+, -2720328.7 <KM>                                                             
+, -823265.19 <KM>                                                             
+ )                                                                            
+TARGET_CENTER_DISTANCE  = 2980871.2 <KM>                                      
+TARGET_SUN_POSITION_VECTOR = (                                                
+  3.1265953E+08 <KM>                                                          
+, 6.7983992E+08 <KM>                                                          
+, 2.8378791E+08 <KM>                                                          
+ )                                                                            
+SOLAR_DISTANCE  = 8.0029612e+08 <KM>                                          
+SC_SUN_POSITION_VECTOR = (                                                    
+  313527132.2136810 <KM>                                                      
+, 677131481.2822893 <KM>                                                      
+, 282970525.3324203 <KM>                                                      
+ )                                                                            
+SPACECRAFT_SOLAR_DISTANCE  = 798046755.3875451 <KM>                           
+SC_EARTH_POSITION_VECTOR = (                                                  
+  176162674.2120706 <KM>                                                      
+, 728009965.4673932 <KM>                                                      
+, 305027842.6633294 <KM>                                                      
+ )                                                                            
+SC_GEOCENTRIC_DISTANCE = 808748281.2378819 <KM>                               
+PHASE_ANGLE                = 56.705378 <DEGREES>                              
+QUATERNION = (                                                                
+  0.6170492162                                                                
+, -0.3187327298                                                               
+, -0.5045034227                                                               
+, -0.5129678433                                                               
+ )                                                                            
+QUATERNION_DESC = "QUAT_AXYZ_J2K_TO_INSTR.ASC"                                
+                                                                              
+OBJECT                          = HEADER                                      
+  BYTES                           = 25920                                     
+  HEADER_TYPE                     = "FITS"                                    
+  INTERCHANGE_FORMAT              = "BINARY"                                  
+  RECORDS                         = 9                                         
+  DESCRIPTION                     = "                                         
+    FITS format defined in NASA/Science                                       
+    Office Standards Technology 100-1.0                                       
+  "                                                                           
+END_OBJECT                      = HEADER                                      
+                                                                              
+OBJECT                          = IMAGE                                       
+  DESCRIPTION                   = "                                           
+    FITS PDU                                                                  
+      PDU                                                                     
+                                                                              
+    Raw image data                                                            
+    - 12-bit values stored in 16-bit integers                                 
+  "                                                                           
+  SAMPLE_BITS                     = 16                                        
+  SAMPLE_TYPE                     = "MSB_INTEGER"                             
+  AXIS_ORDER_TYPE                 = "FIRST_INDEX_FASTEST"                     
+  LINE_DISPLAY_DIRECTION          = "UP"                                      
+  SAMPLE_DISPLAY_DIRECTION        = "RIGHT"                                   
+  LINE_SAMPLES                    = 1028                                      
+  LINES                           = 1024                                      
+  OFFSET                          = 0.00000000000                             
+  SCALING_FACTOR                  = 1.00000000000                             
+END_OBJECT                      = IMAGE                                       
+                                                                              
+OBJECT                          = EXTENSION_HISTOGRAM_HEADER                  
+  BYTES                           = 2880                                      
+  HEADER_TYPE                     = "FITS"                                    
+  INTERCHANGE_FORMAT              = "BINARY"                                  
+  RECORDS                         = 1                                         
+  DESCRIPTION                     = "                                         
+    This is the FITS header for                                               
+      FITS EDU number:  1                                                     
+      FITS EDU name:                                                          
+        HISTOGRAM                                                             
+  "                                                                           
+END_OBJECT                      = EXTENSION_HISTOGRAM_HEADER                  
+                                                                              
+OBJECT                          = EXTENSION_HISTOGRAM_IMAGE                   
+  DESCRIPTION                   = "                                           
+    FITS EDU number:  1                                                       
+      HISTOGRAM                                                               
+                                                                              
+    Raw image data histogram                                                  
+    - The histogram received in the lowrate telemetry                         
+    - details the number of occurrences of pixels having                      
+      specified pixel intensities. There are 32 histogram                     
+      bins covering an intensity range of 0 to 4095,                          
+      indicating that each bin represents a DN range of 128.                  
+  "                                                                           
+  SAMPLE_BITS                     = 32                                        
+  SAMPLE_TYPE                     = "MSB_INTEGER"                             
+  AXIS_ORDER_TYPE                 = "FIRST_INDEX_FASTEST"                     
+  LINE_DISPLAY_DIRECTION          = "UP"                                      
+  SAMPLE_DISPLAY_DIRECTION        = "RIGHT"                                   
+  LINE_SAMPLES                    = 32                                        
+  LINES                           = 1                                         
+  OFFSET                          = 2147483648.00                             
+  SCALING_FACTOR                  = 1.00000000000                             
+END_OBJECT                      = EXTENSION_HISTOGRAM_IMAGE                   
+                                                                              
+OBJECT                          = EXTENSION_ENCODED_FIRST34_HEADER            
+  BYTES                           = 2880                                      
+  HEADER_TYPE                     = "FITS"                                    
+  INTERCHANGE_FORMAT              = "BINARY"                                  
+  RECORDS                         = 1                                         
+  DESCRIPTION                     = "                                         
+    This is the FITS header for                                               
+      FITS EDU number:  2                                                     
+      FITS EDU name:                                                          
+        IMAGE HEADER                                                          
+  "                                                                           
+END_OBJECT                      = EXTENSION_ENCODED_FIRST34_HEADER            
+                                                                              
+OBJECT                          = EXTENSION_ENCODED_FIRST34_IMAGE             
+  DESCRIPTION                   = "                                           
+    FITS EDU number:  2                                                       
+      IMAGE HEADER                                                            
+                                                                              
+    Encoded image header                                                      
+    - normally overlays first 34 pixels of image                              
+    - Multi-byte quantities are MSByte-first                                  
+    - 51 bytes as follows:                                                    
+                                                                              
+    Count    Possible                                                         
+     x Bits  Values                  Description                              
+                                                                              
+     1 x 32  Unsigned integer        Time tag                                 
+    20 x 16  See below               Analog readings                          
+     1 x 16  0 - 29,967              Exposure time (1 ms)                     
+     1 x 8   0 - 255                 Calibration lamp #2 level                
+     1 x 8   0 - 255                 Calibration lamp #1 level                
+     1 x 8   0                       Spare                                    
+     1 x 1   0 = Disable             Dis-/Enable temperature conversion       
+             1 = Enable                                                       
+     1 x 1   0 = Off                 Calibration lamp #2 power enable         
+             1 = On                                                           
+     1 x 1   0 = Off                 Calibration lamp #1 power enable         
+             1 = On                                                           
+     1 x 3   0 = CCD                 Image source                             
+             1 = FPU test pattern 1                                           
+             2 = FPU test pattern 2                                           
+             3 = DPU test pattern 1                                           
+             4 = DPU test pattern 2                                           
+     1 x 1   0 = 1x1                 Image format                             
+             1 = 4x4                                                          
+     1 x 1   0 = Manual              Exposure mode                            
+             1 = Automatic                                                    
+     1 x 8   0                       Spare                                    
+                                                                              
+    Analog readings (LVPS/0 - /15 & FPU/0 -/3):                               
+     1 x 16  0 - 1023                EPU +5 voltage                           
+     1 x 16  0 - 1023                EPU +5 current                           
+     1 x 16  0 - 1023                FPU +15 voltage                          
+     1 x 16  0 - 1023                FPU +15 current                          
+     1 x 16  0 - 1023                FPU +6 voltage                           
+     1 x 16  0 - 1023                FPU +6 current                           
+     1 x 16  0 - 1023                FPU heater current                       
+     1 x 16  0 - 1023                EPU +2.5 voltage                         
+     1 x 16  0 - 1023                Intermediate ring temperature            
+     1 x 16  0 - 1023                Mounting foot-top temperature            
+     1 x 16  0 - 1023                M2 mirror mount temperature              
+     1 x 16  0 - 1023                Radiator temperature                     
+     1 x 16  0 - 1023                Baffle-aft temperature                   
+     1 x 16  0 - 1023                Baffle-forward temperature               
+     1 x 16  0 - 1023                M1 mirror support temperature            
+     1 x 16  0 - 1023                M1 mirror temperature                    
+     1 x 16  0 - 4095                CCD temperature                          
+     1 x 16  0 - 65535               M1 V/F temperature                       
+     1 x 16  0 - 65535               M2 V/F temperature                       
+     1 x 16  0 - 65535               FPU board V/F temperature                
+  "                                                                           
+  SAMPLE_BITS                     = 8                                         
+  SAMPLE_TYPE                     = "MSB_UNSIGNED_INTEGER"                    
+  AXIS_ORDER_TYPE                 = "FIRST_INDEX_FASTEST"                     
+  LINE_DISPLAY_DIRECTION          = "UP"                                      
+  SAMPLE_DISPLAY_DIRECTION        = "RIGHT"                                   
+  LINE_SAMPLES                    = 51                                        
+  LINES                           = 1                                         
+END_OBJECT                      = EXTENSION_ENCODED_FIRST34_IMAGE             
+                                                                              
+OBJECT                          = EXTENSION_IMAGE_DESCRIPTOR_HEADER           
+  BYTES                           = 2880                                      
+  HEADER_TYPE                     = "FITS"                                    
+  INTERCHANGE_FORMAT              = "BINARY"                                  
+  RECORDS                         = 1                                         
+  DESCRIPTION                     = "                                         
+    This is the FITS header for                                               
+      FITS EDU number:  3                                                     
+      FITS EDU name:                                                          
+        IMAGE DESCRIPTOR                                                      
+  "                                                                           
+END_OBJECT                      = EXTENSION_IMAGE_DESCRIPTOR_HEADER           
+                                                                              
+OBJECT                          = EXTENSION_IMAGE_DESCRIPTOR_IMAGE            
+  DESCRIPTION                   = "                                           
+    FITS EDU number:  3                                                       
+      IMAGE DESCRIPTOR                                                        
+                                                                              
+    Image descriptor                                                          
+    - Multi-byte quantities are MSByte-first                                  
+    - 174 bytes as follows:                                                   
+                                                                              
+    Count    Possible                                                         
+     x Bits  Values                  Description                              
+                                                                              
+    20 x 16  See below               Analog readings                          
+     1 x 16  0 - 29,967              Exposure time (1 ms)                     
+     1 x 8   0 - 255                 Calibration lamp #2 level                
+     1 x 8   0 - 255                 Calibration lamp #1 level                
+     1 x 8   0                       Spare                                    
+     1 x 1   0 = Disable             Dis-/Enable temperature conversion       
+             1 = Enable                                                       
+     1 x 1   0 = Off                 Calibration lamp #2 power enable         
+             1 = On                                                           
+     1 x 1   0 = Of                  Calibration lamp #1 power enablef        
+             1 = On                                                           
+     1 x 3   0 = CCD                 Image source                             
+             1 = FPU test pattern 1                                           
+             2 = FPU test pattern 2                                           
+             3 = DPU test pattern 1                                           
+             4 = DPU test pattern 2                                           
+     1 x 1   0 = 1x1                 Image format                             
+             1 = 4x4                                                          
+     1 x 1   0 = Manual              Exposure mode                            
+             1 = Automatic                                                    
+    32 x 32  Unsigned integer        Image histogram                          
+                                                                              
+    Analog readings (LVPS/0 - /15 & FPU/0 -/3):                               
+     1 x 16  0 - 1023                EPU +5 voltage                           
+     1 x 16  0 - 1023                EPU +5 current                           
+     1 x 16  0 - 1023                FPU +15 voltage                          
+     1 x 16  0 - 1023                FPU +15 current                          
+     1 x 16  0 - 1023                FPU +6 voltage                           
+     1 x 16  0 - 1023                FPU +6 current                           
+     1 x 16  0 - 1023                FPU heater current                       
+     1 x 16  0 - 1023                EPU +2.5 voltage                         
+     1 x 16  0 - 1023                Intermediate ring temperature            
+     1 x 16  0 - 1023                Mounting foot-top temperature            
+     1 x 16  0 - 1023                M2 mirror mount temperature              
+     1 x 16  0 - 1023                Radiator temperature                     
+     1 x 16  0 - 1023                Baffle-aft temperature                   
+     1 x 16  0 - 1023                Baffle-forward temperature               
+     1 x 16  0 - 1023                M1 mirror support temperature            
+     1 x 16  0 - 1023                M1 mirror temperature                    
+     1 x 16  0 - 4095                CCD temperature                          
+     1 x 16  0 - 65535               M1 V/F temperature                       
+     1 x 16  0 - 65535               M2 V/F temperature                       
+     1 x 16  0 - 65535               FPU board V/F temperature                
+  "                                                                           
+  SAMPLE_BITS                     = 8                                         
+  SAMPLE_TYPE                     = "MSB_UNSIGNED_INTEGER"                    
+  AXIS_ORDER_TYPE                 = "FIRST_INDEX_FASTEST"                     
+  LINE_DISPLAY_DIRECTION          = "UP"                                      
+  SAMPLE_DISPLAY_DIRECTION        = "RIGHT"                                   
+  LINE_SAMPLES                    = 174                                       
+  LINES                           = 1                                         
+END_OBJECT                      = EXTENSION_IMAGE_DESCRIPTOR_IMAGE            
+END                                                                           

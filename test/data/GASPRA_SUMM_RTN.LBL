@@ -1,0 +1,101 @@
+PDS_VERSION_ID                = PDS3                                          
+RECORD_TYPE                   = FIXED_LENGTH                                  
+RECORD_BYTES                  = 53                                            
+FILE_RECORDS                  = 653                                           
+^TABLE                        = "GASPRA_SUMM_RTN.TAB"                         
+INSTRUMENT_HOST_NAME          = "GALILEO ORBITER"                             
+INSTRUMENT_HOST_ID            = "GO"                                          
+INSTRUMENT_NAME               = "TRIAXIAL FLUXGATE MAGNETOMETER"              
+INSTRUMENT_ID                 = "MAG"                                         
+TARGET_NAME                   = "GASPRA"                                      
+MISSION_PHASE_NAME            = "GASPRA ENCOUNTER"                            
+DATA_SET_ID                   = "GO-A-MAG-4-SUMM-GASPRA-SUMMARY-V1.0"         
+PRODUCT_ID                    = "GASPRA_SUMM_RTN"                             
+PRODUCT_TYPE                  = "DATA"                                        
+STANDARD_DATA_PRODUCT_ID      = "MAG GASPRA SUMM RTN"                         
+PRODUCT_VERSION_ID            = "3"                                           
+PRODUCT_CREATION_TIME         = 2003-02-10T13:15:26.000                       
+START_TIME                    = 1991-10-29T06:03:20.834                       
+STOP_TIME                     = 1991-10-30T02:51:03.452                       
+SPACECRAFT_CLOCK_START_COUNT  = "1/01072211:18:2:0"                           
+SPACECRAFT_CLOCK_STOP_COUNT   = "1/01073445:18:2:0"                           
+DESCRIPTION                   = "                                             
+  Galileo Orbiter magnetic field averaged data from the Gaspra flyby in       
+  RTN coordinates. These data have variable sampling rates, though most       
+  of them are provided in 20 second samples. This file covers                 
+  1991-10-29T06:03:20.834 to 1991-10-30T02:51:03.452."                        
+OBJECT                        = TABLE                                         
+  INTERCHANGE_FORMAT          = ASCII                                         
+  ROWS                        = 653                                           
+  COLUMNS                     = 5                                             
+  ROW_BYTES                   = 53                                            
+                                                                              
+  OBJECT                      = COLUMN                                        
+    NAME                      = "TIME"                                        
+    COLUMN_NUMBER             = 1                                             
+    UNIT                      = "N/A"                                         
+    DATA_TYPE                 = TIME                                          
+    START_BYTE                = 1                                             
+    BYTES                     = 24                                            
+    FORMAT                    = "A24"                                         
+    DESCRIPTION               = "                                             
+      Spacecraft event time at which the spacecraft sampled the               
+      magnetometer instrument memory in order to generate the packetized      
+      data. Time is given in PDS format: yyyy-mm-ddThh:mm:ss.sssZ. The        
+      individual elements of the time field can be read using the format      
+      (i4,4(1x,i2),1x,f6.3) yr, mon, day, hr, min, sec."                      
+  END_OBJECT                  = COLUMN                                        
+                                                                              
+  OBJECT                      = COLUMN                                        
+    NAME                      = "BR"                                          
+    COLUMN_NUMBER             = 2                                             
+    UNIT                      = "nT"                                          
+    DATA_TYPE                 = ASCII_REAL                                    
+    START_BYTE                = 26                                            
+    BYTES                     = 6                                             
+    FORMAT                    = "F6.3"                                        
+    MISSING_CONSTANT          = 99.999                                        
+    DESCRIPTION               = "Magnetic field radial component in RTN       
+                                 coordinates <nT>"                            
+  END_OBJECT                  = COLUMN                                        
+                                                                              
+  OBJECT                      = COLUMN                                        
+    NAME                      = "BT"                                          
+    COLUMN_NUMBER             = 3                                             
+    UNIT                      = "nT"                                          
+    DATA_TYPE                 = ASCII_REAL                                    
+    START_BYTE                = 33                                            
+    BYTES                     = 6                                             
+    FORMAT                    = "F6.3"                                        
+    MISSING_CONSTANT          = 99.999                                        
+    DESCRIPTION               = "Magnetic field tangential component in RTN   
+                                 coordinates <nT>"                            
+  END_OBJECT                  = COLUMN                                        
+                                                                              
+  OBJECT                      = COLUMN                                        
+    NAME                      = "BN"                                          
+    COLUMN_NUMBER             = 4                                             
+    UNIT                      = "nT"                                          
+    DATA_TYPE                 = ASCII_REAL                                    
+    START_BYTE                = 40                                            
+    BYTES                     = 6                                             
+    FORMAT                    = "F6.3"                                        
+    MISSING_CONSTANT          = 99.999                                        
+    DESCRIPTION               = "Magnetic field normal component in RTN       
+                                 coordinates <nT>"                            
+  END_OBJECT                  = COLUMN                                        
+                                                                              
+  OBJECT                      = COLUMN                                        
+    NAME                      = "BMAG"                                        
+    COLUMN_NUMBER             = 5                                             
+    UNIT                      = "nT"                                          
+    DATA_TYPE                 = ASCII_REAL                                    
+    START_BYTE                = 47                                            
+    BYTES                     = 5                                             
+    FORMAT                    = "F6.3"                                        
+    MISSING_CONSTANT          = 9.999                                         
+    DESCRIPTION               = "Magnitude |B| of the magnetic field strength 
+                                 <nT>"                                        
+  END_OBJECT                  = COLUMN                                        
+END_OBJECT                    = TABLE                                         
+END                                                                           

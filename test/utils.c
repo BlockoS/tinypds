@@ -15,7 +15,7 @@ void print_scalar(const PDS_scalar *scalar)
     switch(scalar->type)                                                                                      
     {                                                                                                         
         case PDS_INTEGER_VALUE:                                                                               
-            printf("%d ", scalar->integer.value);
+            printf("%ld ", scalar->integer.value);
             if(scalar->integer.unit.first && scalar->integer.unit.last)
             {
                 print_string(scalar->integer.unit.first, scalar->integer.unit.last);
