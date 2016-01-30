@@ -6,7 +6,7 @@
     
 int main()
 {
-	begin_test_data(double)
+    begin_test_data(double)
         test_data( "   511-", 6,     511.0, PDS_OK ),
         test_data("-71.600 ", 7,     -71.6, PDS_OK ),
         test_data( "+0.0004", 7,    0.0004, PDS_OK ),  
@@ -20,13 +20,13 @@ int main()
         test_data( "8.-0710", 0,       0.0, PDS_INVALID_VALUE ),
     end_test_data()
 
-	PDS_parser parser;
-	parser.error = dummy_error;
+    PDS_parser parser;
+    parser.error = dummy_error;
 
     int i;
     test_foreach(i)
-	{
-		parser.line_num = 1;
+    {
+        parser.line_num = 1;
         parser.first    = test_str(i); 
         parser.last     = parser.first + strlen(parser.first) - 1; 
         parser.current  = parser.first; 
@@ -35,11 +35,11 @@ int main()
         int ret = PDS_parse_real(&parser);
         check(test_status(i) == parser.status);
         check(test_end(i) == parser.current);
-		if(ret)
-		{
-			check(PDS_REAL_VALUE == parser.scalar.type);
-			check(test_expected(i) == parser.scalar.real.value);
-		}
+        if(ret)
+        {
+            check(PDS_REAL_VALUE == parser.scalar.type);
+            check(test_expected(i) == parser.scalar.real.value);
+        }
     }
     return EXIT_SUCCESS;
 }

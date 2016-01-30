@@ -10,10 +10,10 @@
 #define begin_test_data(expected_t) \
 struct \
 { \
-	const char *str; \
-	off_t       end; \
-	expected_t  expected; \
-	int         status; \
+    const char *str; \
+    off_t       end; \
+    expected_t  expected; \
+    int         status; \
 } tv[] = {
 
 #define test_data(s, e, x, a) { .str=s, .end=e, .expected=x, .status=a }

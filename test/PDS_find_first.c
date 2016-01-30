@@ -6,7 +6,7 @@
 
 int main()
 {
-	begin_test_data(char)
+    begin_test_data(char)
         test_data(                      "  b1234\t`#_Q3#[S}",  9, '#', PDS_OK ),
         test_data( "namespace:VALUE_1    =  'literal'  \r\n", 21, '=', PDS_OK ),
         test_data(                          "I hate clowns!",  0, 'I', PDS_OK ), 

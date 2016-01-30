@@ -6,8 +6,8 @@
 
 typedef struct
 {
-	int     base;
-	int32_t value;
+    int     base;
+    int32_t value;
 } integer_t;
  
 int main()
@@ -24,15 +24,15 @@ int main()
 
     int i;
     test_foreach(i)
-	{
+    {
         const char *first = test_str(i);
         const char *last  = first + strlen(first) - 1;
         const char *end   = 0;
-		int status = PDS_OK;
+        int status = PDS_OK;
     
         int32_t value  = PDS_parse_int_base(first, last, &end, test_expected(i).base, &status);
-		
-		check(test_expected(i).value == value);
+        
+        check(test_expected(i).value == value);
         check(test_end(i) == end);
         check(test_status(i) == status);
     }

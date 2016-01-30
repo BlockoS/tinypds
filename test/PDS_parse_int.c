@@ -16,26 +16,26 @@ int main()
         test_data(       "4##", 2,         0, PDS_INVALID_VALUE ),
     end_test_data()
 
-	PDS_parser parser;
-	parser.error = dummy_error;
+    PDS_parser parser;
+    parser.error = dummy_error;
 
-	int i;
+    int i;
     test_foreach(i)
-	{
-		parser.line_num = 1;
+    {
+        parser.line_num = 1;
         parser.first    = test_str(i);
         parser.last     = parser.first + strlen(parser.first) - 1;
         parser.current  = parser.first;
-		parser.status   = PDS_OK;
+        parser.status   = PDS_OK;
         
-		int ret = PDS_parse_int(&parser);
+        int ret = PDS_parse_int(&parser);
         check(test_status(i) == parser.status);
         if(ret)
-		{
-			check(test_end(i) == parser.current);
-			check(PDS_INTEGER_VALUE == parser.scalar.type);
-			check(test_expected(i) == parser.scalar.integer.value);
-		}
-	}
+        {
+            check(test_end(i) == parser.current);
+            check(PDS_INTEGER_VALUE == parser.scalar.type);
+            check(test_expected(i) == parser.scalar.integer.value);
+        }
+    }
     return EXIT_SUCCESS;
 }

@@ -20,25 +20,25 @@ int main()
         test_data(       "<degree*808>",  0, 0, PDS_INVALID_VALUE ), 
     end_test_data()
 
-	PDS_parser parser;
-	parser.error = dummy_error;
+    PDS_parser parser;
+    parser.error = dummy_error;
 
-	int i;
+    int i;
     test_foreach(i)
-	{
-		parser.line_num = 1;
+    {
+        parser.line_num = 1;
         parser.first    = test_str(i);
         parser.last     = parser.first + strlen(parser.first) - 1;
         parser.current  = parser.first;
-		parser.status   = PDS_OK;
+        parser.status   = PDS_OK;
 
-		parser.scalar.type = PDS_INTEGER_VALUE;
-		parser.scalar.integer.unit.first = 0;
-		parser.scalar.integer.unit.last  = 0;
+        parser.scalar.type = PDS_INTEGER_VALUE;
+        parser.scalar.integer.unit.first = 0;
+        parser.scalar.integer.unit.last  = 0;
 
-		int ret = PDS_parse_unit(&parser);
-		
-		check(test_expected(i) == ret);
+        int ret = PDS_parse_unit(&parser);
+        
+        check(test_expected(i) == ret);
         check(test_end(i) == parser.current);
         check(test_status(i) == parser.status);
     }

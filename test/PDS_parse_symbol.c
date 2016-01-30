@@ -16,31 +16,33 @@ int main()
         test_data("'' /*empty string*/",  0, 0, PDS_INVALID_VALUE ), 
     end_test_data()
 
-	PDS_parser parser;
-	parser.error = dummy_error;
+    PDS_parser parser;
+    
+    memset(&parser, 0, sizeof(PDS_parser));
+    parser.error = dummy_error;
 
-	int i;
+    int i;
     test_foreach(i)
-	{
-		parser.scalar.type = PDS_UNKNOWN_VALUE;
+    {
+        parser.scalar.type = PDS_UNKNOWN_VALUE;
 
-		parser.line_num = 1;
+        parser.line_num = 1;
         parser.first    = test_str(i);
         parser.last     = parser.first + strlen(parser.first) - 1;
         parser.current  = parser.first;
-		parser.status   = PDS_OK;
+        parser.status   = PDS_OK;
         
-		int ret = PDS_parse_symbol(&parser);
-		
-		check(test_expected(i) == ret);
+        int ret = PDS_parse_symbol(&parser);
+        
+        check(test_expected(i) == ret);
         check(test_end(i) == parser.current);
         check(test_status(i) == parser.status);
-		if(ret)
-		{
-			check(PDS_SYMBOLIC_VALUE == parser.scalar.type);
-			check((test_str(i)+1) == parser.scalar.symbolic.first);
-			check((test_end(i)-2) == parser.scalar.symbolic.last);
-		}
+        if(ret)
+        {
+            check(PDS_SYMBOLIC_VALUE == parser.scalar.type);
+            check((test_str(i)+1) == parser.scalar.symbolic.first);
+            check((test_end(i)-2) == parser.scalar.symbolic.last);
+        }
     }
     return EXIT_SUCCESS;
 }

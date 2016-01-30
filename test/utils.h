@@ -5,17 +5,17 @@
 
 typedef struct
 {
-	int depth;
-	int count;
-	const char *name;
-	const PDS_scalar *scalar;
+    int depth;
+    int count;
+    const char *name;
+    const PDS_scalar *scalar;
 } expected_t;
 
 typedef struct
 {
-	int depth;
-	int index;
-	const expected_t *expected;
+    int depth;
+    int index;
+    const expected_t *expected;
 } state_t;
 
 void print_string(const char *first, const char *last);

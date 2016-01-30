@@ -17,14 +17,14 @@ int main()
 
     int i;
     test_foreach(i)
-	{
+    {
         const char *first = test_str(i);
         const char *last  = first + strlen(first) - 1;
-		const char *end   = 0;
+        const char *end   = 0;
         int status = PDS_OK;
     
         const char *ptr = PDS_parse_identifier(first, last, &end, &status);
-		check(test_expected(i) == (ptr!=0));
+        check(test_expected(i) == (ptr!=0));
         check(test_end(i) == end);
         check(test_status(i) == status);
     }
