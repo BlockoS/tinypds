@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.1)
 
-project(tinyPDS)
+project(tinypds)
 
 set(TINY_PDS_MAJOR_VERSION 0)
 set(TINY_PDS_MINOR_VERSION 0)
@@ -9,10 +9,10 @@ set(TINY_PDS_VERSION "${TINY_PDS_MAJOR_VERSION}.${TINY_PDS_MINOR_VERSION}.${TINY
 
 find_package(Doxygen)
 
-set(PROJECT_NAME tinyPDS)
+set(PROJECT_NAME tinypds)
 
-add_library(tinyPDS STATIC pds.c)
-set_property(TARGET tinyPDS PROPERTY C_STANDARD 99)
+add_library(tinypds STATIC tinypds.c)
+set_property(TARGET tinypds PROPERTY C_STANDARD 99)
 
 set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.in)
 set(DOXYFILE ${CMAKE_CURRENT_BINARY_DIR}/doxyfile)

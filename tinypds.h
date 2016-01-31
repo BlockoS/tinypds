@@ -1,6 +1,15 @@
-// [todo] license + doc
-#ifndef PDS_H
-#define PDS_H
+/* 
+ * Tiny PDS3 parser
+ *
+ * This file provides both the interface and the implementation.
+ * To instantiate the implementation add the following in *ONE* source file before including this file 
+ *     #define TINY_PDS_IMPL
+ *
+ * Licensed under the MIT License
+ * (c) 2016 Vincent Cruz
+ */
+#ifndef TINY_PDS_H
+#define TINY_PDS_H
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -228,8 +237,8 @@ typedef struct
 } PDS_parser;
 /**
  * Remove leading and trailing white spaces in a string.
- * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
- * carriage return ('\r'), horizontal tab ('\t') or vertical tab ('\v').
+ * A white space is either a space (' '), form-feed ('\\f'), newline ('\\n'),
+ * carriage return ('\\r'), horizontal tab ('\\t') or vertical tab ('\\v').
  * @param [in] first Pointer to the first character of the input string.
  * @param [in] last Pointer to the last character of the input string.
  * @param [out] begin Stores the pointer to the first non-space character.
@@ -331,11 +340,11 @@ int PDS_parse(PDS_parser *parser, const char *buffer, int len, void *user_data);
 }
 #endif
 
-#endif /* PDS_H */
+#endif /* TINY_PDS_H */
 
 /*****************************************************************************/
 
-#ifdef PDS_IMPL
+#ifdef TINY_PDS_IMPL
 
 #define PDS_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -397,8 +406,8 @@ static void PDS_error(PDS_parser *parser, int error, const char *message)
 }
 /**
  * Skip whitespaces and comments from string.
- * A white space is either a space (' '), form-feed ('\f'), newline ('\n'),
- * carriage return ('\r'), horizontal tab ('\t') or vertical tab ('\v').
+ * A white space is either a space (' '), form-feed ('\\f'), newline ('\\n'),
+ * carriage return ('\\r'), horizontal tab ('\\t') or vertical tab ('\\v').
  * Comments are C-like comments, but unlike them they must fit on a single line.
  * Nested comments are forbidden.
  * @param [in,out] parser PDS parser context.
@@ -1901,4 +1910,4 @@ void PDS_set_object_callbacks(PDS_parser *parser, PDS_collection_begin_callback 
     parser->object.begin = begin;
     parser->object.end = end;
 }
-#endif /* PDS_IMPL */
+#endif /* TINY_PDS_IMPL */

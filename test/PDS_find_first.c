@@ -1,8 +1,8 @@
 #include "test.h"
 
-#include <pds.h>
-#define PDS_IMPL
-#include <pds.h>
+#include <tinypds.h>
+#define TINY_PDS_IMPL
+#include <tinypds.h>
 
 int main()
 {
