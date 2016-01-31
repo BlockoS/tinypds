@@ -135,6 +135,9 @@ PDS_set_error_callback(&parser, error)
     
 Finally the parsing is started by calling **PDS_parse**. An implementation example can be found in **test/PDS_parse.c**
 
+## Build ##
+A CMake configuration file is provided in order to build a static library, documentation or run a bundle of tests.
+
 ## License ##
 The MIT License
 Copyright (c) 2015 Vincent Cruz
