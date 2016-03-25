@@ -19,7 +19,7 @@ int main()
     parser.user_data = 0;
     parser.error = dummy_error;
 
-    int i;
+    size_t i;
     test_foreach(i)
     {
         parser.status   = PDS_OK;

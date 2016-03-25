@@ -160,7 +160,7 @@ int main()
     parser.sequence.element = sequence_element_callback;
     parser.sequence.end     = sequence_end_callback;
 
-    int i;
+    size_t i;
     test_foreach(i)
     {
         state_t state = { .depth = 0, .index = 0, .expected = test_expected(i) };

@@ -13,6 +13,7 @@ set(PROJECT_NAME tinypds)
 
 add_library(tinypds STATIC tinypds.c)
 set_property(TARGET tinypds PROPERTY C_STANDARD 99)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wshadow -Wextra")
 
 set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.in)
 set(DOXYFILE ${CMAKE_CURRENT_BINARY_DIR}/doxyfile)

@@ -119,7 +119,7 @@ typedef struct
     /** Hour time offset (number between -12 and 12). **/
     int8_t hour_offset;
     /** Minute time offset (number between 0 and 59). **/
-    uint8_t minute_offset;
+    int8_t minute_offset;
     /** Time type @see PDS_TIME_TYPE **/
     uint8_t time_type;
 } PDS_datetime;
@@ -343,7 +343,6 @@ int PDS_parse(PDS_parser *parser, const char *buffer, int len, void *user_data);
 #endif /* TINY_PDS_H */
 
 /*****************************************************************************/
-
 #ifdef TINY_PDS_IMPL
 
 #define PDS_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
@@ -657,7 +656,7 @@ static int PDS_parse_int(PDS_parser *parser)
             return 0;
         }
         const char *current = ptr+1;
-        value = PDS_parse_int_base(current, parser->last, &ptr, value, &parser->status);
+        value = PDS_parse_int_base(current, parser->last, &ptr, (int)value, &parser->status);
         if(PDS_OK == parser->status)
         {
             /* Check that the number is followed by a closing '#'. */
@@ -693,7 +692,6 @@ static int PDS_parse_real(PDS_parser *parser)
     double value;
     int neg = 0;
     int div;
-    int exponent;
     int64_t integer;
     const char *ptr = 0;
     /* Integer part (can be negative). */   
@@ -740,7 +738,6 @@ static int PDS_parse_real(PDS_parser *parser)
         value += neg ? -decimal : decimal;
     }
     /* Check for exponent. */
-    exponent = 1;
     if(('e' == *ptr) || ('E' == *ptr))
     {
         int64_t i;
@@ -759,6 +756,7 @@ static int PDS_parse_real(PDS_parser *parser)
         }
         else
         {
+            int exponent;
             for(i=0, exponent=1; i<n; ++i, exponent*=10)
             {}
             value *= (double)exponent;
@@ -1150,7 +1148,7 @@ static int PDS_parse_time(const char *first, const char *last, const char **end,
     if(':' == *next)
     {
         first = next+1;
-        value = PDS_parse_int_base(next+1, last, &next, 10, status);
+        value = PDS_parse_int_base(first, last, &next, 10, status);
         if('.' == *next)
         {       
             int64_t tmp, i;
@@ -1228,7 +1226,7 @@ static int PDS_parse_time(const char *first, const char *last, const char **end,
 }
 /**
  * Parse a date and time.
- * A date is either a date, a time or a combinate of date and time string.
+ * A date is either a date, a time or a combination of date and time string.
  * @param [in,out] parser Parser.
  * @return 1 if the string contains a valid date, 0 if the string is invalid.
  */
@@ -1326,12 +1324,12 @@ static const char* PDS_parse_lhs_attribute(const char *first, const char *last, 
 }
 /**
  * Parse left hand side token.
- * lhs_token   := attribute_id | group | object | pointer
- * attibute_id := identifier | namespace:identifier
- * namespace   := identifier
- * group       := 'begin_group' | 'end_group'
- * object      := 'begin_object' | 'end_object'
- * pointer     := ^identifier
+ * lhs_token    := attribute_id | group | object | pointer
+ * attribute_id := identifier | namespace:identifier
+ * namespace    := identifier
+ * group        := 'begin_group' | 'end_group'
+ * object       := 'begin_object' | 'end_object'
+ * pointer      := ^identifier
  * @param [in,out] parser Parser.
  * @return 1 if the string contains a valid token, 0 otherwise.
  */
@@ -1353,7 +1351,7 @@ static int PDS_parse_lhs(PDS_parser *parser)
         { 9,18, PDS_TOKEN_OBJECT, PDS_TOKEN_FLAG_END   }, /* end_object */
         { 0, 2, PDS_TOKEN_END,    PDS_TOKEN_FLAG_NONE  }, /* end        */
     };
-    int i;
+    size_t i;
     /* Sanity check. */
     if(PDS_OK != parser->status)
     {
@@ -1442,12 +1440,6 @@ static int PDS_parse_scalar_value(PDS_parser *parser)
             else if(PDS_isdigit(c) || ('-' == c) || ('+' == c) || ('.' == c))
             {
                 const char *ptr = parser->current+1;
-                const char *eol = PDS_find_first(ptr, parser->last, '\n');
-                if(0 == eol)
-                {
-                    eol = parser->last;
-                }
-    
                 for(; (ptr <= parser->last) && PDS_isdigit(*ptr); ptr++)
                 {}
                 if(PDS_isdigit(c) && (('-' == *ptr) || (':' == *ptr)))
@@ -1488,12 +1480,12 @@ static int PDS_parse_scalar_value(PDS_parser *parser)
  * Parse a value set.
  * set.begin, set.end callbacks are called at the beginning and end of each sets.
  * set.element is called for each set element.
- * @param [in,out] parser Parser.
- * @return 1 if a set was succesfully parsed, 0 otherwise.
+ * @param [in,out] parser Parser.s
+ * @return 1 if a set was successfully parsed, 0 otherwise.
  */
 static int PDS_parse_set(PDS_parser *parser)
 {
-    int ret = 1;
+    int ret;
     if(PDS_OK != parser->status)
     {
         return 0;
@@ -1788,6 +1780,10 @@ static int PDS_parse_statement(PDS_parser *parser)
                 if(0 != callback)
                 {
                     ret = callback(parser->scalar.identifier.first, parser->scalar.identifier.last, parser->user_data);
+                    if(!ret)
+                    {
+                        return 0;
+                    }
                 }
             }
             break;

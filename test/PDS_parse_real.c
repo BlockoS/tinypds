@@ -27,7 +27,7 @@ int main()
     PDS_parser parser;
     parser.error = dummy_error;
 
-    int i;
+    size_t i;
     test_foreach(i)
     {
         parser.line_num = 1;

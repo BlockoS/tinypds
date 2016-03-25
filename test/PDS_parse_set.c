@@ -80,7 +80,7 @@ int main()
     parser.set.element = set_element_callback;
     parser.set.end     = set_end_callback;
 
-    int i;
+    size_t i;
     test_foreach(i)
     {
         state_t state = { .index = 0, .expected = test_expected(i) };

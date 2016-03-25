@@ -22,7 +22,7 @@ int main()
         test_data( "-30000000000000000000", 21, test_pair(10, INT64_MIN), PDS_INVALID_RANGE ),
     end_test_data()
 
-    int i;
+    size_t i;
     test_foreach(i)
     {
         const char *first = test_str(i);

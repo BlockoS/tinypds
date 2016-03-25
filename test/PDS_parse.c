@@ -59,6 +59,8 @@ int dummy_set_element(const PDS_scalar *scalar, void *user_data)
 }
 int dummy_set_end(const char *first, const char *last, void *user_data)
 {
+    (void)first;
+    (void)last;
     user_data_t *data = (user_data_t*)user_data;
     data->depth--;
     print_tab(data->depth);
@@ -84,6 +86,8 @@ int dummy_sequence_element(const PDS_scalar *scalar, void *user_data)
 }
 int dummy_sequence_end(const char *first, const char *last, void *user_data)
 {
+    (void)first;
+    (void)last;
     user_data_t *data = (user_data_t*)user_data;
     data->depth--;
     print_tab(data->depth);
@@ -102,6 +106,8 @@ int dummy_object_begin(const char *first, const char *last, void *user_data)
 }
 int dummy_object_end(const char *first, const char *last, void *user_data)
 {
+    (void)first;
+    (void)last;
     user_data_t *data = (user_data_t*)user_data;
     data->depth--;
     print_tab(data->depth);
@@ -120,6 +126,8 @@ int dummy_group_begin(const char *first, const char *last, void *user_data)
 }
 int dummy_group_end(const char *first, const char *last, void *user_data)
 {
+    (void)first;
+    (void)last;
     user_data_t *data = (user_data_t*)user_data;
     data->depth--;
     print_tab(data->depth);

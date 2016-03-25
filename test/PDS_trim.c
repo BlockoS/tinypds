@@ -14,7 +14,7 @@ int main()
         test_data(          "   \r\v\t \n ", -1,-1, PDS_INVALID_VALUE ),    
     end_test_data() 
 
-    int i;
+    size_t i;
     test_foreach(i)
     {
         const char *first = test_str(i);

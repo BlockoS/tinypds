@@ -106,7 +106,7 @@ int main()
     parser.object.begin = object_begin_callback;
     parser.object.end   = object_end_callback;
 
-    int i;
+    size_t i;
     test_foreach(i)
     {
         state.index = 0;

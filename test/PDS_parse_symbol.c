@@ -21,7 +21,7 @@ int main()
     memset(&parser, 0, sizeof(PDS_parser));
     parser.error = dummy_error;
 
-    int i;
+    size_t i;
     test_foreach(i)
     {
         parser.scalar.type = PDS_UNKNOWN_VALUE;
