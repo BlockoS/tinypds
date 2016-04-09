@@ -1,4 +1,5 @@
 # tinypds : a small PDS 3 parser
+[![Travis build Status](https://travis-ci.org/BlockoS/tinypds.svg)](https://travis-ci.org/BlockoS/tinypds)
 `tinypds` is a small and simple event-driven single header-only library PDS 3 parser.
 
 `tinypds` is written in C with little or no dependencies.
