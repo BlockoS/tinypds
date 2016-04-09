@@ -33,24 +33,57 @@ enable_testing()
 
 include_directories(.)
 add_executable(PDS_find_first test/PDS_find_first.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_parse_datetime test/PDS_parse_datetime.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_parse_identifier test/PDS_parse_identifier.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_parse_int_base test/PDS_parse_int_base.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_parse_int test/PDS_parse_int.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_parse_real test/PDS_parse_real.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_parse_sequence test/PDS_parse_sequence.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_parse_set test/PDS_parse_set.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_parse_statement test/PDS_parse_statement.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_parse_string test/PDS_parse_string.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_parse_symbol test/PDS_parse_symbol.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_parse_unit test/PDS_parse_unit.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_skip_whitespaces test/PDS_skip_whitespaces.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_string_case_compare test/PDS_string_case_compare.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_string_compare test/PDS_string_compare.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_trim test/PDS_trim.c ${TINY_PDS_TEST_SOURCE_FILES})
-add_executable(PDS_parse test/PDS_parse.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_find_first PROPERTY C_STANDARD 99)
 
-add_test(PDS_find_first PDS_find_first )
+add_executable(PDS_parse_datetime test/PDS_parse_datetime.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_parse_datetime PROPERTY C_STANDARD 99)
+
+add_executable(PDS_parse_identifier test/PDS_parse_identifier.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_parse_identifier PROPERTY C_STANDARD 99)
+
+add_executable(PDS_parse_int_base test/PDS_parse_int_base.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_parse_int_base PROPERTY C_STANDARD 99)
+
+add_executable(PDS_parse_int test/PDS_parse_int.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_parse_int PROPERTY C_STANDARD 99)
+
+add_executable(PDS_parse_real test/PDS_parse_real.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_parse_real PROPERTY C_STANDARD 99)
+
+add_executable(PDS_parse_sequence test/PDS_parse_sequence.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_parse_sequence PROPERTY C_STANDARD 99)
+
+add_executable(PDS_parse_set test/PDS_parse_set.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_parse_set PROPERTY C_STANDARD 99)
+
+add_executable(PDS_parse_statement test/PDS_parse_statement.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_parse_statement PROPERTY C_STANDARD 99)
+
+add_executable(PDS_parse_string test/PDS_parse_string.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_parse_string PROPERTY C_STANDARD 99)
+
+add_executable(PDS_parse_symbol test/PDS_parse_symbol.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_parse_symbol PROPERTY C_STANDARD 99)
+
+add_executable(PDS_parse_unit test/PDS_parse_unit.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_parse_unit PROPERTY C_STANDARD 99)
+
+add_executable(PDS_skip_whitespaces test/PDS_skip_whitespaces.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_skip_whitespaces PROPERTY C_STANDARD 99)
+
+add_executable(PDS_string_case_compare test/PDS_string_case_compare.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_string_case_compare PROPERTY C_STANDARD 99)
+
+add_executable(PDS_string_compare test/PDS_string_compare.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_string_compare PROPERTY C_STANDARD 99)
+
+add_executable(PDS_trim test/PDS_trim.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_trim PROPERTY C_STANDARD 99)
+
+add_executable(PDS_parse test/PDS_parse.c ${TINY_PDS_TEST_SOURCE_FILES})
+set_property(TARGET PDS_parse PROPERTY C_STANDARD 99)
+
+add_test(PDS_find_first PDS_find_first)
 add_test(PDS_parse_datetime PDS_parse_datetime)
 add_test(PDS_parse_identifier PDS_parse_identifier)
 add_test(PDS_parse_int_base PDS_parse_int_base)
