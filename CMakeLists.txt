@@ -32,13 +32,8 @@ enable_testing()
 
 include_directories(.)
 add_executable(PDS_find_first test/PDS_find_first.c ${TINY_PDS_TEST_SOURCE_FILES})
-set_property(TARGET PDS_find_first PROPERTY C_STANDARD 99)
-
 add_executable(PDS_parse_datetime test/PDS_parse_datetime.c ${TINY_PDS_TEST_SOURCE_FILES})
-set_property(TARGET PDS_find_first PROPERTY C_STANDARD 99)
-
 add_executable(PDS_parse_identifier test/PDS_parse_identifier.c ${TINY_PDS_TEST_SOURCE_FILES})
-
 add_executable(PDS_parse_int_base test/PDS_parse_int_base.c ${TINY_PDS_TEST_SOURCE_FILES})
 add_executable(PDS_parse_int test/PDS_parse_int.c ${TINY_PDS_TEST_SOURCE_FILES})
 add_executable(PDS_parse_real test/PDS_parse_real.c ${TINY_PDS_TEST_SOURCE_FILES})
