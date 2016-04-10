@@ -1595,9 +1595,12 @@ static int PDS_parse_sequence(PDS_parser *parser)
             {
                 ++parser->current;
                 ++depth;
-                if(0 == parser->sequence.begin(parser->token.first, parser->token.last, parser->user_data))
+                if(0 != parser->sequence.begin)
                 {
-                    return 0;
+                    if(0 == parser->sequence.begin(parser->token.first, parser->token.last, parser->user_data))
+                    {
+                        return 0;
+                    }
                 }
             }
             else
