@@ -7,14 +7,25 @@ compiler:
 addons:
   apt:
     sources:
-      - george-edison55-precise-backports # cmake 3.2.3 / doxygen 1.8.3
+      - george-edison55-precise-backports
     packages:
       - cmake
       - cmake-data
+  coverity_scan:
+    project:
+      name: BlockoS/tinypds
+    notification_email: cruz.vincent@gmail.com
+    build_command: "make"
+    branch_pattern: master
 
 before_script:
   - mkdir build
   - cd build
+  - cmake ..
 
 script:
-  - cmake .. && make && make test
+  - make && make test
+
+env:
+  global:
+    secure: eFHW32Bz9wrxMyV7GKy/pA8yWi1qSGncatY7S+CT3e99Hp2oII/+KwrZQ1bb5UAizdAhGDdgYA7KZhbxISw7CpY7pt6yh8rTNgICyvg6bZXfO3mTLJeMnQM2YzPSfIc6mABt0qyB3heffua7tG3P06Tx5A8s0MOtFsG5pb6uymlTZN2klxYrtb0AsCGxRCPYAflIdEeGADdteabDmjxoOnWKC6moEFM79ULYya6dnlo9HVMbyxOKz6PIJtU0YjTEyd7c3rFLwCg2yPtqoN7YIEnDvmdCsl3Ribb52hzvk1kBTJJMquVgkn6P209qCe7l1JxmobyYO7hrUJYziLSHX63TjW4UmhkpiEXYgO1ohXjGH/sEFnySg5BHVb7f/dduUHYClZQNkAPbm3McdZXRIqixqv/Gj/1HB19/o1ko6AMWpXkXzDoRUWCHCKQPWfjZZ8l2xxdF9qpkalHO8mVwHOPBWPPvJ24KXwjctQjCpId7F1f+oWJbMj+t7FHT4W41SckbcXsfrNwMdzI//1deKTo2L2rZPxR/758vUZIyp6TDw8/2on/70zwGNS6RM9VV0uiXap8cIh0PJ+u3+XouNijrU2FuL3EINvFU8Ariw8d1JDAB2zwNWYD0E6Br0+AGNUcbdZphI3AjdOlKu/x/ewlW079fKirBmig9KdSJfts=
