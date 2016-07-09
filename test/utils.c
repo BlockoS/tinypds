@@ -120,35 +120,66 @@ int compare_scalar(const PDS_scalar *s0, const PDS_scalar *s1)
     }
 }
 
-int attribute_callback(const char *first, const char *last, const PDS_scalar *scalar, void *user_data)
+int attribute_begin_callback(const char *first, const char *last, void *user_data)
 {
     state_t *state = (state_t*)user_data;
     const expected_t *expected = state->expected;
     if(!PDS_string_compare(first, last, expected->name, expected->name+strlen(expected->name)-1))
     {
-        fprintf(stderr, "scalar name mismatch\n");
+        fprintf(stderr, "attribute name mismatch\n");
         return 0;
     }
+    printf("%s = ", expected->name);
+    return 1;
+}
+
+int attribute_end_callback(const char *first, const char *last, void *user_data)
+{
+    (void)first;
+    (void)last;
+    (void)user_data;
+    printf("\n");
+    return 1;
+}
+
+int pointer_begin_callback(const char *first, const char *last, void *user_data)
+{
+    state_t *state = (state_t*)user_data;
+    const expected_t *expected = state->expected;
+    if(!PDS_string_compare(first, last, expected->name, expected->name+strlen(expected->name)-1))
+    {
+        fprintf(stderr, "pointer name mismatch\n");
+        return 0;
+    }
+    printf("%s = ", expected->name);
+    return 1;
+}
+
+int pointer_end_callback(const char *first, const char *last, void *user_data)
+{
+    (void)first;
+    (void)last;
+    (void)user_data;
+    printf("\n");
+    return 1;
+}
+
+int scalar_callback(const PDS_scalar *scalar, void *user_data)
+{
+    state_t *state = (state_t*)user_data;
+    const expected_t *expected = state->expected;
+    print_scalar(scalar);
     if(!compare_scalar(scalar, expected->scalar))
     {
         fprintf(stderr, "scalar value mismatch\n");
         return 0;
     }
-    printf("%s = ", expected->name);
-    print_scalar(scalar);
     return 1;
 }
 
-int set_begin_callback(const char *first, const char *last, void *user_data)
+int set_begin_callback(void *user_data)
 {
-    state_t *state = (state_t*)user_data;
-    const expected_t *expected = state->expected;
-    if(!PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last))
-    {
-        fprintf(stderr, "set name mismatch\n");
-        return 0;
-    }
-    print_string(first, last);
+    (void)user_data;
     printf(" = {\n");                                  
     return 1;
 }
@@ -175,40 +206,27 @@ int set_element_callback(const PDS_scalar *scalar, void *user_data)
     return 1;
 }
 
-int set_end_callback(const char *first, const char *last, void *user_data)
+int set_end_callback(void *user_data)
 {
-    state_t *state = (state_t*)user_data;
-    const expected_t *expected = state->expected;
-    if(!PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last))
-    {
-        fprintf(stderr, "set name mismatch\n");
-        return 0;
-    }
+    (void)user_data;
     printf("}\n");                                  
     return 1;
 }
 
-int sequence_begin_callback(const char *first, const char *last, void *user_data)
+int sequence_begin_callback(void *user_data)
 {
     state_t *state = (state_t*)user_data;
     const expected_t *expected = state->expected;   
-    if(!PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last))
-    {
-        fprintf(stderr, "sequence name mismatch\n");
-        return 0;
-    }
     state->depth++;
     if(state->depth > expected->depth)
     {
         fprintf(stderr, "invalid sequence dimension\n");
         return 0;
     }
-        
     for(int i=1; i<state->depth; i++)
     {
         printf("\t");
     }
-    print_string(first, last);
     printf(" = (\n");
     return 1;
 }
@@ -236,15 +254,9 @@ int sequence_element_callback(const PDS_scalar *scalar, void *user_data)
     return 1;
 }
 
-int sequence_end_callback(const char *first, const char *last, void *user_data)
+int sequence_end_callback(void *user_data)
 {
     state_t *state = (state_t*)user_data;
-    const expected_t *expected = state->expected;   
-    if(!PDS_string_compare(expected->name, expected->name+strlen(expected->name)-1, first, last))
-    {
-        fprintf(stderr, "sequence name mismatch\n");
-        return 0;
-    }
     state->depth--;
     if(state->depth < 0)
     {

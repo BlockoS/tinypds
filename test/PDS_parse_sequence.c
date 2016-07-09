@@ -155,11 +155,10 @@ int main()
     end_test_data()
 
     PDS_parser parser;
-    parser.error = dummy_error;
-    parser.sequence.begin   = sequence_begin_callback;
-    parser.sequence.element = sequence_element_callback;
-    parser.sequence.end     = sequence_end_callback;
-
+    memset(&parser, 0, sizeof(PDS_parser));
+    PDS_set_error_callback(&parser, dummy_error);
+    PDS_set_sequence_callbacks(&parser, sequence_begin_callback, sequence_element_callback, sequence_end_callback);
+  
     size_t i;
     test_foreach(i)
     {

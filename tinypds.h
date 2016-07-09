@@ -179,14 +179,17 @@ typedef struct
     /** Flag (begin/end, ...). **/
     int flag;
 } PDS_token;
-/** Attribute callback **/
-typedef int  (*PDS_attribute_callback) (const char *first, const char *last, const PDS_scalar *scalar, void *user_data);
-/** Collection/definition start callback. **/
-typedef int  (*PDS_collection_begin_callback) (const char *first, const char *last, void *user_data);
-/** Collection element callback. **/
-typedef int  (*PDS_collection_element_callback) (const PDS_scalar *scalar, void *user_data);
-/** Collection/definition end callback. **/
-typedef int  (*PDS_collection_end_callback) (const char *first, const char *last, void *user_data);
+
+/** New element callback. **/
+typedef int (*PDS_begin_callback) (const char *first, const char *last, void *user_data);
+/** End of current element callback. **/
+typedef int (*PDS_end_callback) (const char *first, const char *last, void *user_data);
+/** New scalar callback. **/
+typedef int (*PDS_scalar_callback) (const PDS_scalar *scalar, void *user_data);
+/** New collection callback. **/
+typedef int (*PDS_collection_begin_callback) (void *user_data);
+/** End of collection callback. **/
+typedef int (*PDS_collection_end_callback) (void *user_data);
 /** Error callback. **/
 typedef void (*PDS_error_callback)(int line, const char *text, void *user_data);
 /**
@@ -212,28 +215,31 @@ typedef struct
     PDS_token token;
     /** Current scalar value. **/
     PDS_scalar scalar;
-    /** New attribute callback. **/
-    PDS_attribute_callback attribute;
-    /** New pointer callback. **/
-    PDS_attribute_callback pointer;
     struct
-    {   /** Collection start callback. **/
-        PDS_collection_begin_callback begin;
-        /** Collection element callback. **/
-        PDS_collection_element_callback element;
-        /** Collection end callback. **/
-        PDS_collection_end_callback end;
-    } set       /** Set callbacks. **/ 
-    , sequence; /** Sequence callbacks. **/
-    struct
-    {   /** Declaration start callback. **/
-        PDS_collection_begin_callback begin;
-        /** Declaration end callback. **/
-        PDS_collection_end_callback end;
-    } group   /** Group callbacks. **/ 
-    , object; /** Object callbacks. **/
-    /** Display error message. **/
-    PDS_error_callback error;
+    {
+        struct
+        {   /** Declaration start callback. **/
+            PDS_begin_callback begin;
+            /** Declaration end callback.   **/
+            PDS_end_callback end;
+        } attribute /** Attribute callbacks. **/
+        , pointer   /** Pointer callbacks.   **/
+        , group     /** Group callbacks.     **/ 
+        , object;   /** Object callbacks.    **/
+        struct
+        {   /** Collection start callback. **/
+            PDS_collection_begin_callback begin;
+            /** Collection element callback. **/
+            PDS_scalar_callback element;
+            /** Collection end callback.   **/
+            PDS_collection_end_callback end;
+        } set       /** Set callbacks.       **/ 
+        , sequence; /** Sequence callbacks.  **/
+        /** Scalar callback. **/
+        PDS_scalar_callback scalar;
+        /** Display error message. **/
+        PDS_error_callback error;
+    } callbacks; /** Callbacks. **/
 } PDS_parser;
 /**
  * Remove leading and trailing white spaces in a string.
@@ -273,23 +279,37 @@ int PDS_string_compare(const char *f0, const char *l0, const char *f1, const cha
  */
 int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, const char *l1);
 /**
- * Set error callback.
+ * Set attribute callbacks.
  * @param [in,out] parser Parser.
- * @param [in]     error  Error callback.
+ * @param [in]     begin  Attribute start callback.
+ * @param [in]     end    Attribute end callback.
  */
-void PDS_set_error_callback(PDS_parser *parser, PDS_error_callback error);
+void PDS_set_attribute_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
+                                                     PDS_end_callback   end);
 /**
- * Set attribute callback.
- * @param [in,out] parser    Parser.
- * @param [in]     attribute Attribute callback.
+ * Set pointer callbacks.
+ * @param [in,out] parser Parser.
+ * @param [in]     begin  Pointer start callback.
+ * @param [in]     end    Pointer end callback.
  */
-void PDS_set_attribute_callback(PDS_parser *parser, PDS_attribute_callback attribute);
+void PDS_set_pointer_callbacks(PDS_parser *parser, PDS_begin_callback begin,
+                                                   PDS_end_callback   end);
 /**
- * Set pointer callback.
- * @param [in,out] parser  Parser.
- * @param [in]     pointer Pointer callback.
+ * Set group callbacks.
+ * @param [in,out] parser Parser.
+ * @param [in]     begin  Group start callback.
+ * @param [in]     end    Group end callback.
  */
-void PDS_set_pointer_callback(PDS_parser *parser, PDS_attribute_callback pointer);
+void PDS_set_group_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
+                                                 PDS_end_callback   end);
+/**
+ * Set object callbacks.
+ * @param [in,out] parser Parser.
+ * @param [in]     begin  Object start callback.
+ * @param [in]     end    Object end callback.
+ */
+void PDS_set_object_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
+                                                  PDS_end_callback   end);
 /**
  * Set 'set' callbacks.
  * @param [in,out] parser  Parser.
@@ -297,9 +317,9 @@ void PDS_set_pointer_callback(PDS_parser *parser, PDS_attribute_callback pointer
  * @param [in]     element Set element callback.
  * @param [in]     end     Set end callback.
  */
-void PDS_set_set_callbacks(PDS_parser *parser, PDS_collection_begin_callback   begin, 
-                                               PDS_collection_element_callback element,
-                                               PDS_collection_end_callback     end);
+void PDS_set_set_callbacks(PDS_parser *parser, PDS_collection_begin_callback begin,
+                                               PDS_scalar_callback           element,
+                                               PDS_collection_end_callback   end);
 /**
  * Set sequence callbacks.
  * @param [in,out] parser  Parser.
@@ -307,25 +327,21 @@ void PDS_set_set_callbacks(PDS_parser *parser, PDS_collection_begin_callback   b
  * @param [in]     element Sequence element callback.
  * @param [in]     end     Sequence end callback.
  */
-void PDS_set_sequence_callbacks(PDS_parser *parser, PDS_collection_begin_callback   begin, 
-                                                    PDS_collection_element_callback element,
-                                                    PDS_collection_end_callback     end);
+void PDS_set_sequence_callbacks(PDS_parser *parser, PDS_collection_begin_callback begin,
+                                                    PDS_scalar_callback           element,
+                                                    PDS_collection_end_callback   end);
 /**
- * Set group callbacks.
+ * Set scalar callback.
  * @param [in,out] parser Parser.
- * @param [in]     begin  Group start callback.
- * @param [in]     end    Group end callback.
+ * @param [in]     error  Scalar callback.
  */
-void PDS_set_group_callbacks(PDS_parser *parser, PDS_collection_begin_callback begin, 
-                                                 PDS_collection_end_callback   end);
+void PDS_set_scalar_callback(PDS_parser *parser, PDS_scalar_callback scalar);
 /**
- * Set object callbacks.
+ * Set error callback.
  * @param [in,out] parser Parser.
- * @param [in]     begin  Object start callback.
- * @param [in]     end    Object end callback.
+ * @param [in]     error  Error callback.
  */
-void PDS_set_object_callbacks(PDS_parser *parser, PDS_collection_begin_callback begin, 
-                                                  PDS_collection_end_callback   end);
+void PDS_set_error_callback(PDS_parser *parser, PDS_error_callback error);
 /**
  * Parse the PDS data contained in the input buffer.
  * @param [in] parser    Parser.
@@ -398,9 +414,9 @@ static const char *PDS_other_chars      = "!$%;?@[]`|~";
 static void PDS_error(PDS_parser *parser, int error, const char *message)
 {
     parser->status = error;
-    if(0 != parser->error)
+    if(0 != parser->callbacks.error)
     {
-        parser->error(parser->line_num, message, parser->user_data);
+        parser->callbacks.error(parser->line_num, message, parser->user_data);
     }
 }
 /**
@@ -1496,9 +1512,9 @@ static int PDS_parse_set(PDS_parser *parser)
         PDS_error(parser, PDS_INVALID_VALUE, "missing set separator");
         return 0;
     }
-    if(0 != parser->set.begin)
+    if(0 != parser->callbacks.set.begin)
     {
-        if(0 == parser->set.begin(parser->token.first, parser->token.last, parser->user_data))
+        if(0 == parser->callbacks.set.begin(parser->user_data))
         {
             return 0;
         }
@@ -1520,9 +1536,9 @@ static int PDS_parse_set(PDS_parser *parser)
             ret = PDS_parse_scalar_value(parser);
             if(ret)
             {
-                if(0 != parser->set.element)
+                if(0 != parser->callbacks.set.element)
                 {
-                    if(0 == parser->set.element(&parser->scalar, parser->user_data))
+                    if(0 == parser->callbacks.set.element(&parser->scalar, parser->user_data))
                     {
                         return 0;
                     }
@@ -1533,9 +1549,9 @@ static int PDS_parse_set(PDS_parser *parser)
                     char c = *parser->current++;
                     if('}' == c)
                     {
-                        if(0 != parser->set.end)
+                        if(0 != parser->callbacks.set.end)
                         {
-                            if(0 == parser->set.end(parser->token.first, parser->token.last, parser->user_data))
+                            if(0 == parser->callbacks.set.end(parser->user_data))
                             {
                                 return 0;
                             }
@@ -1579,9 +1595,9 @@ static int PDS_parse_sequence(PDS_parser *parser)
         PDS_error(parser, PDS_INVALID_VALUE, "missing sequence separator");
         return 0;
     }
-    if(0 != parser->sequence.begin)
+    if(0 != parser->callbacks.sequence.begin)
     {
-        if(0 == parser->sequence.begin(parser->token.first, parser->token.last, parser->user_data))
+        if(0 == parser->callbacks.sequence.begin(parser->user_data))
         {
             return 0;
         }   
@@ -1595,9 +1611,9 @@ static int PDS_parse_sequence(PDS_parser *parser)
             {
                 ++parser->current;
                 ++depth;
-                if(0 != parser->sequence.begin)
+                if(0 != parser->callbacks.sequence.begin)
                 {
-                    if(0 == parser->sequence.begin(parser->token.first, parser->token.last, parser->user_data))
+                    if(0 == parser->callbacks.sequence.begin(parser->user_data))
                     {
                         return 0;
                     }
@@ -1608,9 +1624,9 @@ static int PDS_parse_sequence(PDS_parser *parser)
                 ret = PDS_parse_scalar_value(parser);
                 if(ret)
                 {
-                    if(0 != parser->sequence.element)
+                    if(0 != parser->callbacks.sequence.element)
                     {
-                        if(0 == parser->sequence.element(&parser->scalar, parser->user_data))
+                        if(0 == parser->callbacks.sequence.element(&parser->scalar, parser->user_data))
                         {
                             return 0;
                         }
@@ -1622,9 +1638,9 @@ static int PDS_parse_sequence(PDS_parser *parser)
                         while(((c = *parser->current++) == ')') && (depth > 0))
                         {
                             --depth;
-                            if(0 != parser->sequence.end)
+                            if(0 != parser->callbacks.sequence.end)
                             {
-                                if(0 == parser->sequence.end(parser->token.first, parser->token.last, parser->user_data))
+                                if(0 == parser->callbacks.sequence.end(parser->user_data))
                                 {
                                     return 0;
                                 }
@@ -1670,16 +1686,9 @@ static int PDS_parse_rhs(PDS_parser *parser)
             ret = PDS_parse_scalar_value(parser);
             if(ret)
             {
-                if(PDS_TOKEN_POINTER == parser->token.type)
+                if(0 != parser->callbacks.scalar)
                 {
-                    if(0 != parser->pointer)
-                    {
-                        ret = parser->pointer(parser->token.first, parser->token.last, &parser->scalar, parser->user_data);
-                    }
-                }
-                else if(0 != parser->attribute)
-                {
-                    ret = parser->attribute(parser->token.first, parser->token.last, &parser->scalar, parser->user_data);
+                    ret = parser->callbacks.scalar(&parser->scalar, parser->user_data);
                 }
             }
             break;
@@ -1754,10 +1763,38 @@ static int PDS_parse_statement(PDS_parser *parser)
     {
         case PDS_TOKEN_ATTRIBUTE:
         case PDS_TOKEN_POINTER:
-            if(0 == PDS_parse_rhs(parser))
             {
-                PDS_error(parser, parser->status, "invalid right value");
-                return 0;
+                PDS_begin_callback begin;
+                PDS_end_callback   end;
+                if(PDS_TOKEN_ATTRIBUTE == parser->token.type)
+                {
+                    begin = parser->callbacks.attribute.begin;
+                    end   = parser->callbacks.attribute.end;
+                }
+                else
+                {
+                    begin = parser->callbacks.pointer.begin;
+                    end   = parser->callbacks.pointer.end;
+                }
+                if(0 != begin)
+                {
+                    if(!begin(parser->token.first, parser->token.last, parser->user_data))
+                    {
+                        return 0;
+                    }
+                }
+                if(0 == PDS_parse_rhs(parser))
+                {
+                    PDS_error(parser, parser->status, "invalid right value");
+                    return 0;
+                }
+                if(0 != end)
+                {
+                    if( !end(parser->token.first, parser->token.last, parser->user_data) )
+                    {
+                        return 0;
+                    }
+                }
             }
             break;
         case PDS_TOKEN_GROUP:
@@ -1774,11 +1811,11 @@ static int PDS_parse_statement(PDS_parser *parser)
                 parser->scalar.type = PDS_IDENTIFIER_VALUE;
                 if(PDS_TOKEN_GROUP == parser->token.type)
                 {
-                    callback = (PDS_TOKEN_FLAG_BEGIN == parser->token.flag) ? parser->group.begin : parser->group.end;
+                    callback = (PDS_TOKEN_FLAG_BEGIN == parser->token.flag) ? parser->callbacks.group.begin : parser->callbacks.group.end;
                 }
                 else
                 {
-                    callback = (PDS_TOKEN_FLAG_BEGIN == parser->token.flag) ? parser->object.begin : parser->object.end;
+                    callback = (PDS_TOKEN_FLAG_BEGIN == parser->token.flag) ? parser->callbacks.object.begin : parser->callbacks.object.end;
                 }
                 if(0 != callback)
                 {
@@ -1858,55 +1895,60 @@ int PDS_parse(PDS_parser *parser, const char *buffer, int len, void *user_data)
     }   
     return ret;
 }
+/* Set attribute callback. */
+void PDS_set_attribute_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
+                                                     PDS_end_callback   end)
+{
+    parser->callbacks.attribute.begin = begin;
+    parser->callbacks.attribute.end   = end;
+}
+/* Set pointer callback. */
+void PDS_set_pointer_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
+                                                   PDS_end_callback   end)
+{
+    parser->callbacks.pointer.begin = begin;
+    parser->callbacks.pointer.end   = end;
+}
+/* Set group callbacks. */
+void PDS_set_group_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
+                                                 PDS_end_callback   end)
+{
+    parser->callbacks.group.begin = begin;
+    parser->callbacks.group.end = end;
+}
+/* Set object callbacks. */
+void PDS_set_object_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
+                                                  PDS_end_callback   end)
+{
+    parser->callbacks.object.begin = begin;
+    parser->callbacks.object.end = end;
+}
+/* Set 'set' callbacks. */
+void PDS_set_set_callbacks(PDS_parser *parser, PDS_collection_begin_callback begin, 
+                                               PDS_scalar_callback           element,
+                                               PDS_collection_end_callback   end)
+{
+    parser->callbacks.set.begin   = begin;
+    parser->callbacks.set.element = element;
+    parser->callbacks.set.end     = end;
+}
+/* Set sequence callbacks. */
+void PDS_set_sequence_callbacks(PDS_parser *parser, PDS_collection_begin_callback begin, 
+                                                    PDS_scalar_callback           element,
+                                                    PDS_collection_end_callback   end)
+{
+    parser->callbacks.sequence.begin   = begin;
+    parser->callbacks.sequence.element = element;
+    parser->callbacks.sequence.end     = end;
+}
+/* Set scalar callback. */
+void PDS_set_scalar_callback(PDS_parser *parser, PDS_scalar_callback scalar)
+{
+    parser->callbacks.scalar = scalar;
+}
 /* Set error callback. */
 void PDS_set_error_callback(PDS_parser *parser, PDS_error_callback error)
 {
-    parser->error = error;
-}
-/* Set attribute callback. */
-void PDS_set_attribute_callback(PDS_parser *parser, PDS_attribute_callback attribute)
-{
-    parser->attribute = attribute;
-}
-/* Set pointer callback. */
-void PDS_set_pointer_callback(PDS_parser *parser, PDS_attribute_callback pointer)
-{
-    parser->pointer = pointer;
-}
-/* Set 'set' callbacks. */
-void PDS_set_set_callbacks(PDS_parser *parser, PDS_collection_begin_callback   begin, 
-                                               PDS_collection_element_callback element,
-                                               PDS_collection_end_callback     end)
-{
-    parser->set.begin = begin;
-    parser->set.element = element;
-    parser->set.end = end;
-}
-/* Set sequence callbacks. */
-void PDS_set_sequence_callbacks(PDS_parser *parser, PDS_collection_begin_callback   begin, 
-                                                    PDS_collection_element_callback element,
-                                                    PDS_collection_end_callback     end)
-{
-    parser->sequence.begin = begin;
-    parser->sequence.element = element;
-    parser->sequence.end = end;
-}
-/*
- * Set group callbacks.
- */
-void PDS_set_group_callbacks(PDS_parser *parser, PDS_collection_begin_callback begin, 
-                                                 PDS_collection_end_callback   end)
-{
-    parser->group.begin = begin;
-    parser->group.end = end;
-}
-/*
- * Set object callbacks.
- */
-void PDS_set_object_callbacks(PDS_parser *parser, PDS_collection_begin_callback begin, 
-                                                  PDS_collection_end_callback   end)
-{
-    parser->object.begin = begin;
-    parser->object.end = end;
+    parser->callbacks.error = error;
 }
 #endif /* TINY_PDS_IMPL */

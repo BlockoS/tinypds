@@ -21,7 +21,7 @@ int main()
     end_test_data()
 
     PDS_parser parser;
-    parser.error = dummy_error;
+    PDS_set_error_callback(&parser, dummy_error);
 
     size_t i;
     test_foreach(i)
