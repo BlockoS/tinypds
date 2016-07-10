@@ -98,12 +98,12 @@ int main()
     memset(&state, 0, sizeof(state_t));
 
     memset(&parser, 0, sizeof(PDS_parser));
-    PDS_set_error_callback(&parser, dummy_error);
-    PDS_set_scalar_callback(&parser, scalar_callback);
-    PDS_set_attribute_callbacks(&parser, attribute_begin_callback, attribute_end_callback);
-    PDS_set_pointer_callbacks(&parser, pointer_begin_callback, pointer_end_callback);
-    PDS_set_group_callbacks(&parser, group_begin_callback, group_end_callback);
-    PDS_set_object_callbacks(&parser, object_begin_callback, object_end_callback);
+    PDS_set_error_callback(&parser.callbacks, dummy_error);
+    PDS_set_scalar_callback(&parser.callbacks, scalar_callback);
+    PDS_set_attribute_callbacks(&parser.callbacks, attribute_begin_callback, attribute_end_callback);
+    PDS_set_pointer_callbacks(&parser.callbacks, pointer_begin_callback, pointer_end_callback);
+    PDS_set_group_callbacks(&parser.callbacks, group_begin_callback, group_end_callback);
+    PDS_set_object_callbacks(&parser.callbacks, object_begin_callback, object_end_callback);
 
     size_t i;
     test_foreach(i)

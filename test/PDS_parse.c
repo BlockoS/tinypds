@@ -150,7 +150,7 @@ int dummy_group_end(const char *first, const char *last, void *user_data)
 
 int main(int argc, const char* argv[])
 {
-    PDS_parser parser;
+    PDS_callbacks callbacks;
 
     FILE *in;
     size_t len;
@@ -194,16 +194,16 @@ int main(int argc, const char* argv[])
     
     user_data.depth = 0;
     
-    PDS_set_error_callback(&parser, dummy_error);
-    PDS_set_scalar_callback(&parser, dummy_scalar);
-    PDS_set_attribute_callbacks(&parser, dummy_attribute_begin, dummy_attribute_end);
-    PDS_set_pointer_callbacks(&parser, dummy_pointer_begin, dummy_pointer_end);
-    PDS_set_set_callbacks(&parser, dummy_set_begin, dummy_set_element, dummy_set_end);
-    PDS_set_sequence_callbacks(&parser, dummy_sequence_begin, dummy_sequence_element, dummy_sequence_end);
-    PDS_set_group_callbacks(&parser, dummy_group_begin, dummy_group_end);
-    PDS_set_object_callbacks(&parser, dummy_object_begin, dummy_object_end);
+    PDS_set_error_callback(&callbacks, dummy_error);
+    PDS_set_scalar_callback(&callbacks, dummy_scalar);
+    PDS_set_attribute_callbacks(&callbacks, dummy_attribute_begin, dummy_attribute_end);
+    PDS_set_pointer_callbacks(&callbacks, dummy_pointer_begin, dummy_pointer_end);
+    PDS_set_set_callbacks(&callbacks, dummy_set_begin, dummy_set_element, dummy_set_end);
+    PDS_set_sequence_callbacks(&callbacks, dummy_sequence_begin, dummy_sequence_element, dummy_sequence_end);
+    PDS_set_group_callbacks(&callbacks, dummy_group_begin, dummy_group_end);
+    PDS_set_object_callbacks(&callbacks, dummy_object_begin, dummy_object_end);
 
-    ret = PDS_parse(&parser, buffer, len, &user_data);
+    ret = PDS_parse(&callbacks, buffer, len, &user_data);
 
     free(buffer);
     return ret ? EXIT_SUCCESS : EXIT_FAILURE;

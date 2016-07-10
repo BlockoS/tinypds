@@ -18,25 +18,31 @@ To instantiate the implementation add the following define in *ONE* source file 
 The `tinypds` events and associated callbacks are : 
 * **scalar attribute statement** 
   ```c
-  int attribute(const char *first, const char *last, const PDS_scalar *scalar, void *user_data)
+  int attribute_begin(const char *first, const char *last, void *user_data)
+  int attribute_end(const char *first, const char *last, void *user_data)
   ```
   * **first** and **last** are pointers to the first and last characters of the **attribute name**.
-  * **scalar** is the attribute value.
   * **user_data** is a pointer to the user data.
 
 * **pointer statement**
   ```c
-  int pointer(const char *first, const char *last, const PDS_scalar *scalar, void *user_data)
+  int pointer_begin(const char *first, const char *last, void *user_data)
+  int pointer_end(const char *first, const char *last, void *user_data)
   ```
   * **first** and **last** are pointers to the first and last characters of the **pointer name**.
-  * **scalar** is the pointer value.
+  * **user_data** is a pointer to the user data.
+
+* **single scalar value**
+  ```c
+  int scalar(const PDS_scalar *value, void *user_data)
+  ```
+  * **value** is a pointer to the current scalar value.
   * **user_data** is a pointer to the user data.
 
 * **sequence attribute start**
   ```c
-  int sequence_begin(const char *first, const char *last, void *user_data)
+  int sequence_begin(void *user_data)
   ```
-  * **first** and **last** are pointers to the first and last characters of the **sequence name**.
   * **user_data** is a pointer to the user data.
 
 * **sequence attribute element**
@@ -48,16 +54,14 @@ The `tinypds` events and associated callbacks are :
 
 * **sequence attribute end**
   ```c
-  int sequence_end(const char *first, const char *last, void *user_data)
+  int sequence_end(void *user_data)
   ```
-  * **first** and **last** are pointers to the first and last characters of the **sequence name**.
   * **user_data** is a pointer to the user data.
 
 * **set attribute start**
   ```c
-  int set_begin(const char *first, const char *last, void *user_data)
+  int set_begin(void *user_data)
   ```
-  * **first** and **last** are pointers to the first and last characters of the **set name**.
   * **user_data** is a pointer to the user data.
 
 * **set attribute element**
@@ -69,9 +73,8 @@ The `tinypds` events and associated callbacks are :
 
 * **set attribute end**
   ```c
-  int set_end(const char *first, const char *last, void *user_data)
+  int set_end(void *user_data)
   ```
-  * **first** and **last** are pointers to the first and last characters of the **set name**.
   * **user_data** is a pointer to the user data.
 
 * **object declaration start**
@@ -114,25 +117,25 @@ Callbacks returning an **int** must return 0 if an error occured.
 
 The callbacks are set using the following functions :
 ```c
-PDS_set_attribute_callback(&parser, attribute)
+PDS_set_attribute_callbacks(&callbacks, attribute_begin, attribute_end)
 ```
 ```c
-PDS_set_pointer_callback(&parser, pointer)
+PDS_set_pointer_callbacks(&callbacks, pointer_begin, pointer_end)
 ```
 ```c
-PDS_set_sequence_callbacks(&parser, sequence_begin, sequence_element, sequence_end)
+PDS_set_group_callbacks(&callbacks, group_begin, group_end)
 ```
 ```c
-PDS_set_set_callbacks(&parser, set_begin, set_element, set_end)
+PDS_set_object_callbacks(&callbacks, object_begin, object_end)
 ```
 ```c
-PDS_set_group_callbacks(&parser, group_begin, group_end)
+PDS_set_sequence_callbacks(&callbacks, sequence_begin, sequence_element, sequence_end)
 ```
 ```c
-PDS_set_object_callbacks(&parser, object_begin, object_end)
+PDS_set_set_callbacks(&callbacks, set_begin, set_element, set_end)
 ```
 ```c
-PDS_set_error_callback(&parser, error)
+PDS_set_error_callback(&callbacks, error)
 ```
     
 Finally the parsing is started by calling **PDS_parse**. An implementation example can be found in **test/PDS_parse.c**

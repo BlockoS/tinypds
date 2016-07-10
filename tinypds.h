@@ -12,6 +12,7 @@
 #define TINY_PDS_H
 #include <stdint.h>
 #include <sys/types.h>
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -143,42 +144,6 @@ typedef union
     /** Identifier. **/
     PDS_string identifier;
 } PDS_scalar;
-/**
- * PDS token type.
- * These types correspond to the type of assignment they belong to.
- */
-enum PDS_TOKEN_TYPE
-{
-    PDS_TOKEN_UNKNOWN = 0,
-    PDS_TOKEN_ATTRIBUTE,
-    PDS_TOKEN_POINTER,
-    PDS_TOKEN_GROUP,
-    PDS_TOKEN_OBJECT,
-    PDS_TOKEN_END,
-};
-/**
- * PDS token flag.
- */
-enum PDS_TOKEN_FLAG
-{
-    PDS_TOKEN_FLAG_NONE = 0,
-    PDS_TOKEN_FLAG_BEGIN,
-    PDS_TOKEN_FLAG_END
-};
-/**
- * PDS token.
- */
-typedef struct
-{
-    /** Pointer to the first character of the token. **/ 
-    const char *first;
-    /** Pointer to the last character of the token. **/
-    const char *last;
-    /** Token type @see PDS_TOKEN_TYPE **/
-    int type;
-    /** Flag (begin/end, ...). **/
-    int flag;
-} PDS_token;
 
 /** New element callback. **/
 typedef int (*PDS_begin_callback) (const char *first, const char *last, void *user_data);
@@ -193,54 +158,33 @@ typedef int (*PDS_collection_end_callback) (void *user_data);
 /** Error callback. **/
 typedef void (*PDS_error_callback)(int line, const char *text, void *user_data);
 /**
- * PSD parser.
+ * PSD parser callbacks.
  */
 typedef struct
 {
-    /** Current status @see PDS_STATUS **/
-    int status;
-    /** Pointer to the first character of the input text. **/
-    const char *first;
-    /** Pointer to the last character of the input text. **/
-    const char *last;
-    /** Pointer to the current character. **/
-    const char *current;
-    /** Pointer to the beginning of the current line. **/
-    const char *line;
-    /** Number of the line being parsed.**/
-    int line_num;
-    /** User data. **/
-    void *user_data;
-    /** Current token. **/
-    PDS_token token;
-    /** Current scalar value. **/
-    PDS_scalar scalar;
     struct
-    {
-        struct
-        {   /** Declaration start callback. **/
-            PDS_begin_callback begin;
-            /** Declaration end callback.   **/
-            PDS_end_callback end;
-        } attribute /** Attribute callbacks. **/
-        , pointer   /** Pointer callbacks.   **/
-        , group     /** Group callbacks.     **/ 
-        , object;   /** Object callbacks.    **/
-        struct
-        {   /** Collection start callback. **/
-            PDS_collection_begin_callback begin;
-            /** Collection element callback. **/
-            PDS_scalar_callback element;
-            /** Collection end callback.   **/
-            PDS_collection_end_callback end;
-        } set       /** Set callbacks.       **/ 
-        , sequence; /** Sequence callbacks.  **/
-        /** Scalar callback. **/
-        PDS_scalar_callback scalar;
-        /** Display error message. **/
-        PDS_error_callback error;
-    } callbacks; /** Callbacks. **/
-} PDS_parser;
+    {   /** Declaration start callback. **/
+        PDS_begin_callback begin;
+        /** Declaration end callback.   **/
+        PDS_end_callback end;
+    } attribute /** Attribute callbacks. **/
+    , pointer   /** Pointer callbacks.   **/
+    , group     /** Group callbacks.     **/ 
+    , object;   /** Object callbacks.    **/
+    struct
+    {   /** Collection start callback. **/
+        PDS_collection_begin_callback begin;
+        /** Collection element callback. **/
+        PDS_scalar_callback element;
+        /** Collection end callback.   **/
+        PDS_collection_end_callback end;
+    } set       /** Set callbacks.       **/ 
+    , sequence; /** Sequence callbacks.  **/
+    /** Scalar callback. **/
+    PDS_scalar_callback scalar;
+    /** Display error message. **/
+    PDS_error_callback error;
+} PDS_callbacks;
 /**
  * Remove leading and trailing white spaces in a string.
  * A white space is either a space (' '), form-feed ('\\f'), newline ('\\n'),
@@ -280,77 +224,77 @@ int PDS_string_compare(const char *f0, const char *l0, const char *f1, const cha
 int PDS_string_case_compare(const char *f0, const char *l0, const char *f1, const char *l1);
 /**
  * Set attribute callbacks.
- * @param [in,out] parser Parser.
- * @param [in]     begin  Attribute start callback.
- * @param [in]     end    Attribute end callback.
+ * @param [in,out] callbacks Parser callbacks.
+ * @param [in]     begin     Attribute start callback.
+ * @param [in]     end       Attribute end callback.
  */
-void PDS_set_attribute_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
-                                                     PDS_end_callback   end);
+void PDS_set_attribute_callbacks(PDS_callbacks *callbacks, PDS_begin_callback begin, 
+                                                           PDS_end_callback   end);
 /**
  * Set pointer callbacks.
- * @param [in,out] parser Parser.
- * @param [in]     begin  Pointer start callback.
- * @param [in]     end    Pointer end callback.
+ * @param [in,out] callbacks Parser callbacks.
+ * @param [in]     begin     Pointer start callback.
+ * @param [in]     end       Pointer end callback.
  */
-void PDS_set_pointer_callbacks(PDS_parser *parser, PDS_begin_callback begin,
-                                                   PDS_end_callback   end);
+void PDS_set_pointer_callbacks(PDS_callbacks *callbacks, PDS_begin_callback begin,
+                                                         PDS_end_callback   end);
 /**
  * Set group callbacks.
- * @param [in,out] parser Parser.
- * @param [in]     begin  Group start callback.
- * @param [in]     end    Group end callback.
+ * @param [in,out] callbacks Parser callbacks.
+ * @param [in]     begin     Group start callback.
+ * @param [in]     end       Group end callback.
  */
-void PDS_set_group_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
-                                                 PDS_end_callback   end);
+void PDS_set_group_callbacks(PDS_callbacks *callbacks, PDS_begin_callback begin, 
+                                                       PDS_end_callback   end);
 /**
  * Set object callbacks.
- * @param [in,out] parser Parser.
- * @param [in]     begin  Object start callback.
- * @param [in]     end    Object end callback.
+ * @param [in,out] callbacks Parser callbacks.
+ * @param [in]     begin     Object start callback.
+ * @param [in]     end       Object end callback.
  */
-void PDS_set_object_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
-                                                  PDS_end_callback   end);
+void PDS_set_object_callbacks(PDS_callbacks *callbacks, PDS_begin_callback begin, 
+                                                        PDS_end_callback   end);
 /**
  * Set 'set' callbacks.
- * @param [in,out] parser  Parser.
- * @param [in]     begin   Set start callback.
- * @param [in]     element Set element callback.
- * @param [in]     end     Set end callback.
+ * @param [in,out] callbacks Parser callbacks.
+ * @param [in]     begin     Set start callback.
+ * @param [in]     element   Set element callback.
+ * @param [in]     end       Set end callback.
  */
-void PDS_set_set_callbacks(PDS_parser *parser, PDS_collection_begin_callback begin,
-                                               PDS_scalar_callback           element,
-                                               PDS_collection_end_callback   end);
+void PDS_set_set_callbacks(PDS_callbacks *callbacks, PDS_collection_begin_callback begin,
+                                                     PDS_scalar_callback           element,
+                                                     PDS_collection_end_callback   end);
 /**
  * Set sequence callbacks.
- * @param [in,out] parser  Parser.
- * @param [in]     begin   Sequence start callback.
- * @param [in]     element Sequence element callback.
- * @param [in]     end     Sequence end callback.
+ * @param [in,out] callbacks Parser callbacks.
+ * @param [in]     begin     Sequence start callback.
+ * @param [in]     element   Sequence element callback.
+ * @param [in]     end       Sequence end callback.
  */
-void PDS_set_sequence_callbacks(PDS_parser *parser, PDS_collection_begin_callback begin,
-                                                    PDS_scalar_callback           element,
-                                                    PDS_collection_end_callback   end);
+void PDS_set_sequence_callbacks(PDS_callbacks *callbacks, PDS_collection_begin_callback begin,
+                                                          PDS_scalar_callback           element,
+                                                          PDS_collection_end_callback   end);
 /**
  * Set scalar callback.
- * @param [in,out] parser Parser.
- * @param [in]     error  Scalar callback.
+ * @param [in,out] callbacks Parser callbacks.
+ * @param [in]     error     Scalar callback.
  */
-void PDS_set_scalar_callback(PDS_parser *parser, PDS_scalar_callback scalar);
+void PDS_set_scalar_callback(PDS_callbacks *callbacks, PDS_scalar_callback scalar);
 /**
  * Set error callback.
- * @param [in,out] parser Parser.
- * @param [in]     error  Error callback.
+ * @param [in,out] callbacks Parser callbacks.
+ * @param [in]     error     Error callback.
  */
-void PDS_set_error_callback(PDS_parser *parser, PDS_error_callback error);
+void PDS_set_error_callback(PDS_callbacks *callbacks, PDS_error_callback error);
 /**
  * Parse the PDS data contained in the input buffer.
- * @param [in] parser    Parser.
+ * @param [in] callbacks Parser callbacks.
  * @param [in] buffer    Input buffer.
  * @param [in] len       Length of the input buffer.
  * @param [in] user_data User data.
  * @return 1 if the PDS data contained in the input buffer was successfully parsed, or 0 if an error occured.
  */
-int PDS_parse(PDS_parser *parser, const char *buffer, int len, void *user_data);
+int PDS_parse(PDS_callbacks *callbacks, const char *buffer, int len, void *user_data);
 
 #ifdef __cplusplus
 }
@@ -404,6 +348,67 @@ static const char *PDS_spacing_chars    = " \t";
 static const char *PDS_format_effectors = "\r\n\f\v";
 static const char *PDS_other_chars      = "!$%;?@[]`|~";
 #endif
+
+/**
+ * PDS token type.
+ * These types correspond to the type of assignment they belong to.
+ */
+enum PDS_TOKEN_TYPE
+{
+    PDS_TOKEN_UNKNOWN = 0,
+    PDS_TOKEN_ATTRIBUTE,
+    PDS_TOKEN_POINTER,
+    PDS_TOKEN_GROUP,
+    PDS_TOKEN_OBJECT,
+    PDS_TOKEN_END,
+};
+/**
+ * PDS token flag.
+ */
+enum PDS_TOKEN_FLAG
+{
+    PDS_TOKEN_FLAG_NONE = 0,
+    PDS_TOKEN_FLAG_BEGIN,
+    PDS_TOKEN_FLAG_END
+};
+/**
+ * PDS token.
+ */
+typedef struct
+{
+    /** Pointer to the first character of the token. **/ 
+    const char *first;
+    /** Pointer to the last character of the token. **/
+    const char *last;
+    /** Token type @see PDS_TOKEN_TYPE **/
+    int type;
+    /** Flag (begin/end, ...). **/
+    int flag;
+} PDS_token;
+/** PDS parser. **/
+typedef struct
+{
+    /** Current status @see PDS_STATUS **/
+    int status;
+    /** Pointer to the first character of the input text. **/
+    const char *first;
+    /** Pointer to the last character of the input text. **/
+    const char *last;
+    /** Pointer to the current character. **/
+    const char *current;
+    /** Pointer to the beginning of the current line. **/
+    const char *line;
+    /** Number of the line being parsed.**/
+    int line_num;
+    /** User data. **/
+    void *user_data;
+    /** Current token. **/
+    PDS_token token;
+    /** Current scalar value. **/
+    PDS_scalar scalar;
+    /** Callbacks. **/
+    PDS_callbacks callbacks;
+} PDS_parser;
 
 /**
  * Set error and run error display callback.
@@ -1847,12 +1852,14 @@ static int PDS_parse_statement(PDS_parser *parser)
 /*
  * Parse the PDS data contained in the input buffer.
  */
-int PDS_parse(PDS_parser *parser, const char *buffer, int len, void *user_data)
+int PDS_parse(PDS_callbacks *callbacks, const char *buffer, int len, void *user_data)
 {
     const char* pds_version_name_first = "PDS_VERSION_ID";
     const char* pds_version_name_last  = &pds_version_name_first[13];
     const char* pds_version_id_first = "PDS3";
     const char* pds_version_id_last  = &pds_version_id_first[3];
+
+    PDS_parser parser;
 
     int ret;
     
@@ -1861,94 +1868,95 @@ int PDS_parse(PDS_parser *parser, const char *buffer, int len, void *user_data)
     {
         return 0;
     }
-    parser->line = parser->current = parser->first = buffer;
-    parser->last = buffer + len;
-    parser->line_num = 1;
-    parser->user_data = user_data;
-    parser->status = PDS_OK;
+    memcpy(&parser.callbacks, callbacks, sizeof(PDS_callbacks));
+    parser.line = parser.current = parser.first = buffer;
+    parser.last = buffer + len;
+    parser.line_num = 1;
+    parser.user_data = user_data;
+    parser.status = PDS_OK;
 
     /* The first statement must be the PDS_VERSION_ID attribute. */
-    if(!PDS_parse_statement(parser))
+    if(!PDS_parse_statement(&parser))
     {
         return 0;
     }
-    if(!PDS_string_case_compare(parser->token.first, parser->token.last, pds_version_name_first, pds_version_name_last))
+    if(!PDS_string_case_compare(parser.token.first, parser.token.last, pds_version_name_first, pds_version_name_last))
     {
-        PDS_error(parser, PDS_INVALID_VALUE, "a PDS file must start with PDS_VERSION_ID");
+        PDS_error(&parser, PDS_INVALID_VALUE, "a PDS file must start with PDS_VERSION_ID");
         return 0;
     }
     /* Check version. */
-    if(PDS_IDENTIFIER_VALUE != parser->scalar.type)
+    if(PDS_IDENTIFIER_VALUE != parser.scalar.type)
     {
-        PDS_error(parser, PDS_INVALID_VALUE, "invalid value type for PDS_VERSION_ID");
+        PDS_error(&parser, PDS_INVALID_VALUE, "invalid value type for PDS_VERSION_ID");
         return 0;
     }
-    if(!PDS_string_case_compare(parser->scalar.identifier.first, parser->scalar.identifier.last, pds_version_id_first, pds_version_id_last))
+    if(!PDS_string_case_compare(parser.scalar.identifier.first, parser.scalar.identifier.last, pds_version_id_first, pds_version_id_last))
     {
-        PDS_error(parser, PDS_INVALID_VALUE, "invalid PDS version id");
+        PDS_error(&parser, PDS_INVALID_VALUE, "invalid PDS version id");
         return 0;
     }   
     /* Parse the remaining. */  
-    for(ret=1; ret && (PDS_OK == parser->status); )
+    for(ret=1; ret && (PDS_OK == parser.status); )
     {
-        ret = PDS_parse_statement(parser);
+        ret = PDS_parse_statement(&parser);
     }   
     return ret;
 }
 /* Set attribute callback. */
-void PDS_set_attribute_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
-                                                     PDS_end_callback   end)
+void PDS_set_attribute_callbacks(PDS_callbacks *callbacks, PDS_begin_callback begin, 
+                                                           PDS_end_callback   end)
 {
-    parser->callbacks.attribute.begin = begin;
-    parser->callbacks.attribute.end   = end;
+    callbacks->attribute.begin = begin;
+    callbacks->attribute.end   = end;
 }
 /* Set pointer callback. */
-void PDS_set_pointer_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
-                                                   PDS_end_callback   end)
+void PDS_set_pointer_callbacks(PDS_callbacks *callbacks, PDS_begin_callback begin, 
+                                                         PDS_end_callback   end)
 {
-    parser->callbacks.pointer.begin = begin;
-    parser->callbacks.pointer.end   = end;
+    callbacks->pointer.begin = begin;
+    callbacks->pointer.end   = end;
 }
 /* Set group callbacks. */
-void PDS_set_group_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
-                                                 PDS_end_callback   end)
+void PDS_set_group_callbacks(PDS_callbacks *callbacks, PDS_begin_callback begin, 
+                                                       PDS_end_callback   end)
 {
-    parser->callbacks.group.begin = begin;
-    parser->callbacks.group.end = end;
+    callbacks->group.begin = begin;
+    callbacks->group.end = end;
 }
 /* Set object callbacks. */
-void PDS_set_object_callbacks(PDS_parser *parser, PDS_begin_callback begin, 
-                                                  PDS_end_callback   end)
+void PDS_set_object_callbacks(PDS_callbacks *callbacks, PDS_begin_callback begin, 
+                                                        PDS_end_callback   end)
 {
-    parser->callbacks.object.begin = begin;
-    parser->callbacks.object.end = end;
+    callbacks->object.begin = begin;
+    callbacks->object.end = end;
 }
 /* Set 'set' callbacks. */
-void PDS_set_set_callbacks(PDS_parser *parser, PDS_collection_begin_callback begin, 
-                                               PDS_scalar_callback           element,
-                                               PDS_collection_end_callback   end)
+void PDS_set_set_callbacks(PDS_callbacks *callbacks, PDS_collection_begin_callback begin, 
+                                                     PDS_scalar_callback           element,
+                                                     PDS_collection_end_callback   end)
 {
-    parser->callbacks.set.begin   = begin;
-    parser->callbacks.set.element = element;
-    parser->callbacks.set.end     = end;
+    callbacks->set.begin   = begin;
+    callbacks->set.element = element;
+    callbacks->set.end     = end;
 }
 /* Set sequence callbacks. */
-void PDS_set_sequence_callbacks(PDS_parser *parser, PDS_collection_begin_callback begin, 
-                                                    PDS_scalar_callback           element,
-                                                    PDS_collection_end_callback   end)
+void PDS_set_sequence_callbacks(PDS_callbacks *callbacks, PDS_collection_begin_callback begin, 
+                                                          PDS_scalar_callback           element,
+                                                          PDS_collection_end_callback   end)
 {
-    parser->callbacks.sequence.begin   = begin;
-    parser->callbacks.sequence.element = element;
-    parser->callbacks.sequence.end     = end;
+    callbacks->sequence.begin   = begin;
+    callbacks->sequence.element = element;
+    callbacks->sequence.end     = end;
 }
 /* Set scalar callback. */
-void PDS_set_scalar_callback(PDS_parser *parser, PDS_scalar_callback scalar)
+void PDS_set_scalar_callback(PDS_callbacks *callbacks, PDS_scalar_callback scalar)
 {
-    parser->callbacks.scalar = scalar;
+    callbacks->scalar = scalar;
 }
 /* Set error callback. */
-void PDS_set_error_callback(PDS_parser *parser, PDS_error_callback error)
+void PDS_set_error_callback(PDS_callbacks *callbacks, PDS_error_callback error)
 {
-    parser->callbacks.error = error;
+    callbacks->error = error;
 }
 #endif /* TINY_PDS_IMPL */

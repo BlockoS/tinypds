@@ -16,8 +16,7 @@ int main()
     end_test_data()
 
     memset(&parser, 0, sizeof(PDS_parser));
-    parser.user_data = 0;
-    PDS_set_error_callback(&parser, dummy_error);
+    PDS_set_error_callback(&parser.callbacks, dummy_error);
 
     size_t i;
     test_foreach(i)

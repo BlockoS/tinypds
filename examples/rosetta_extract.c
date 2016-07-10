@@ -28,10 +28,17 @@ enum PDS_SAMPLE_TYPE
 {
     /** Unknown type. */
     PDS_SAMPLE_UNKNOWN_TYPE = 0,
-	/** LSB unsigned integer. **/
-	PDS_SAMPLE_UINT_LSB,
+    /** LSB unsigned integer. **/
+    PDS_SAMPLE_UINT_LSB,
     /** 32 bits IEEE float. **/
     PDS_SAMPLE_FLOAT
+};
+/** Element type **/
+enum PDS_ELEMENT_TYPE
+{
+    PDS_NONE = 0,
+    PDS_ATTRIBUTE,
+    PDS_POINTER
 };
 /** PDS image structure. **/
 typedef struct
@@ -48,9 +55,9 @@ typedef struct
     size_t bands;
 } PDS_image;
 /** PDS parser payload. **/
-typedef struct
+typedef struct PDS_payload_t
 {
-	/** Image. **/
+    /** Image. **/
     PDS_image image;
     /** Record size in bytes. **/
     size_t record_size;
@@ -62,6 +69,10 @@ typedef struct
     int depth;
     /** Are we parsing the IMAGE OBJECT. **/
     int image_object;
+    /** Current element type. **/
+    int element_type;
+    /** Current parsing operation. **/
+    int (*op)(const PDS_scalar *scalar, struct PDS_payload_t *payload);
 } PDS_payload;
 /** Attribute info. **/
 typedef struct
@@ -128,6 +139,21 @@ uint8_t convert_type_name(const char *first, const char *last)
         }
     }
     return PDS_SAMPLE_UNKNOWN_TYPE;
+}
+/**
+ * Get image record from PDS scalar.
+ * @param [in] scalar  PDS scalar.
+ * @param [in] payload PDS parser payload containing the image structure to initialize.  
+ * @return 1 the scalar contains an unsigned integer, 0 otherwise. 
+ */
+int image_record(const PDS_scalar *scalar, PDS_payload *payload)
+{
+    if (PDS_INTEGER_VALUE != scalar->type)
+    {
+        return 0;
+    }
+    payload->image_record = (size_t) scalar->integer.value;
+    return 1;
 }
 /**
  * Get image line count from PDS scalar.
@@ -238,11 +264,10 @@ void print_error(int line, const char *msg, void *unused)
  * Global attribute parser.
  * @param [in]     first     Pointer to the first character of the attribute name.
  * @param [in]     last      Pointer to the last character of the attribute name.
- * @param [in]     scalar    Attribute value.
  * @param [in,out] user_data PDS parser user data.
  * @return 1 upon success or 0 if an error occured.
  */
-int parse_attribute(const char *first, const char *last, const PDS_scalar *scalar, void *user_data)
+int parse_attribute_begin(const char *first, const char *last, void *user_data)
 {
     static PDS_attributes_infos base_attributes[] =
     {
@@ -275,7 +300,7 @@ int parse_attribute(const char *first, const char *last, const PDS_scalar *scala
     {
         return 1;
     }
-
+    payload->element_type = PDS_ATTRIBUTE;
     if(payload->image_object)
     {
         attributes = image_attributes;
@@ -291,14 +316,56 @@ int parse_attribute(const char *first, const char *last, const PDS_scalar *scala
         return 1;
     }
 
+    payload->op = NULL;
     for(i=0; i<count; i++)
     {
         if (PDS_string_case_compare(attributes[i].name, str_last(attributes[i].name), first, last))
         {
-            if (!attributes[i].parser(scalar, payload))
-            {
-                return 0;
-            }
+            payload->op = attributes[i].parser;
+            return 1; 
+        }
+    }
+    return 1;
+}
+/**
+ * End of attribute declaration callback.
+ * @param [in]     first     Pointer to the first character of the attribute name.
+ * @param [in]     last      Pointer to the last character of the attribute name.
+ * @param [in,out] user_data PDS parser user data.
+ * @return 1 upon success or 0 if an error occured.
+ */
+int parse_attribute_end(const char *first, const char *last, void *user_data)
+{
+    PDS_payload *payload = (PDS_payload*)user_data;
+    (void)first;
+    (void)last;
+    if(NULL == payload)
+    {
+        return 0;
+    }
+    payload->element_type = PDS_NONE;
+    return 1;
+}
+/**
+ * Scalar callback.
+ * @param [in]     scalar    Scalar value.
+ * @param [in,out] user_data PDS parser user data.
+ * @return 1 upon success or 0 if an error occured.
+ */
+int parse_scalar(const PDS_scalar *scalar, void *user_data)
+{
+    PDS_payload *payload = (PDS_payload*)user_data;
+    if(NULL == payload)
+    {
+        return 0;
+    }
+    if(payload->op)
+    {
+        int ret = payload->op(scalar, payload);
+        payload->op = NULL;
+        if(!ret)
+        {
+            return 0;
         }
     }
     return 1;
@@ -308,11 +375,10 @@ int parse_attribute(const char *first, const char *last, const PDS_scalar *scala
  * We are only interested in IMAGE pointer. The rest is ignored.
  * @param [in]     first     Pointer to the first character of the pointer name.
  * @param [in]     last      Pointer to the last character of the pointer name.
- * @param [in]     scalar    Pointer value.
  * @param [in,out] user_data PDS parser user data.
  * @return 1 upon success or 0 if an error occured.
  */
-int parse_pointer(const char *first, const char *last, const PDS_scalar *scalar, void *user_data)
+int parse_pointer_begin(const char *first, const char *last, void *user_data)
 {
     PDS_payload *payload = (PDS_payload*)user_data;
     if(NULL == payload)
@@ -323,30 +389,42 @@ int parse_pointer(const char *first, const char *last, const PDS_scalar *scalar,
     {
         return 1;
     }
+    payload->element_type = PDS_POINTER;
     if(0 == payload->depth)
     {
         if (PDS_string_case_compare(g_image_string, str_last(g_image_string), first, last))
         {
-            if (PDS_INTEGER_VALUE != scalar->type)
-            {
-                return 0;
-            }
-            payload->image_record = (size_t) scalar->integer.value;
+            payload->op = image_record;
         }
     }
     return 1;
 }
 /**
+ * End of pointer declaration callback.
+ * @param [in]     first     Pointer to the first character of the pointer name.
+ * @param [in]     last      Pointer to the last character of the pointer name.
+ * @param [in,out] user_data PDS parser user data.
+ * @return 1 upon success or 0 if an error occured.
+ */
+int parse_pointer_end(const char *first, const char *last, void *user_data)
+{
+    PDS_payload *payload = (PDS_payload*)user_data;
+    (void)first;
+    (void)last;
+    if(NULL == payload)
+    {
+        return 0;
+    }
+    payload->element_type = PDS_NONE;
+    return 1;
+}
+/**
  * Dummy callback for the start and end of set and sequence.
- * @param [in]     first     Pointer to the first character of the set or sequence name. (unused)
- * @param [in]     last      Pointer to the last character of the set or sequence name. (unused)
  * @param [in,out] user_data PDS parser user data. (unused)
  * @return always 1. 
  */
-int dummy_begin_end(const char *first, const char *last, void *user_data)
+int dummy_begin_end(void *user_data)
 {
-    (void)first;
-    (void)last;
     (void)user_data;
     return 1;
 }
@@ -521,7 +599,7 @@ int write_image(const char *filename, char *buffer, size_t size, PDS_payload *pa
     size_t bytes_per_sample = payload->image.sample_bits / 8;
     size_t element_count = payload->image.lines * payload->image.samples_per_line;
     size_t byte_count = element_count * bytes_per_sample;
-	size_t offset = (payload->image_record-1) * payload->record_size;
+    size_t offset = (payload->image_record-1) * payload->record_size;
     if((offset + byte_count) > size)
     {
         return 0;
@@ -589,7 +667,7 @@ int write_image(const char *filename, char *buffer, size_t size, PDS_payload *pa
  */
 int main(int argc, char **argv)
 {
-    PDS_parser parser;
+    PDS_callbacks callbacks;
     PDS_payload payload;
 
     char *buffer;
@@ -610,19 +688,20 @@ int main(int argc, char **argv)
 
     memset(&payload, 0, sizeof(PDS_payload));
 
-    PDS_set_error_callback(&parser, print_error);
-    PDS_set_attribute_callback(&parser, parse_attribute);
-    PDS_set_pointer_callback(&parser, parse_pointer);
-    PDS_set_set_callbacks(&parser, dummy_begin_end, dummy_element, dummy_begin_end);
-    PDS_set_sequence_callbacks(&parser, dummy_begin_end, dummy_element, dummy_begin_end);
-    PDS_set_group_callbacks(&parser, group_begin, group_end);
-    PDS_set_object_callbacks(&parser, object_begin, object_end);
+    PDS_set_error_callback(&callbacks, print_error);
+    PDS_set_scalar_callback(&callbacks, parse_scalar);
+    PDS_set_attribute_callbacks(&callbacks, parse_attribute_begin, parse_attribute_end);
+    PDS_set_pointer_callbacks(&callbacks, parse_pointer_begin, parse_pointer_end);
+    PDS_set_set_callbacks(&callbacks, dummy_begin_end, dummy_element, dummy_begin_end);
+    PDS_set_sequence_callbacks(&callbacks, dummy_begin_end, dummy_element, dummy_begin_end);
+    PDS_set_group_callbacks(&callbacks, group_begin, group_end);
+    PDS_set_object_callbacks(&callbacks, object_begin, object_end);
 
-    ret = PDS_parse(&parser, buffer, (int)size, &payload);
-	if(ret)
-	{
-		ret = write_image(argv[2], buffer, size, &payload);
-	}
+    ret = PDS_parse(&callbacks, buffer, (int)size, &payload);
+    if(ret)
+    {
+        ret = write_image(argv[2], buffer, size, &payload);
+    }
 
     free(buffer);
     return ret ? EXIT_SUCCESS : EXIT_FAILURE;
