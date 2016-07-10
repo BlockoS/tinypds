@@ -19,6 +19,8 @@ The `tinypds` events and associated callbacks are :
 * **scalar attribute statement** 
   ```c
   int attribute_begin(const char *first, const char *last, void *user_data)
+  ```
+  ```c
   int attribute_end(const char *first, const char *last, void *user_data)
   ```
   * **first** and **last** are pointers to the first and last characters of the **attribute name**.
@@ -27,6 +29,8 @@ The `tinypds` events and associated callbacks are :
 * **pointer statement**
   ```c
   int pointer_begin(const char *first, const char *last, void *user_data)
+  ```
+  ```c
   int pointer_end(const char *first, const char *last, void *user_data)
   ```
   * **first** and **last** are pointers to the first and last characters of the **pointer name**.
@@ -127,6 +131,10 @@ PDS_set_group_callbacks(&callbacks, group_begin, group_end)
 ```
 ```c
 PDS_set_object_callbacks(&callbacks, object_begin, object_end)
+```
+```c
+PDS_set_scalar_callback(&callbacks, scalar)
+```
 ```
 ```c
 PDS_set_sequence_callbacks(&callbacks, sequence_begin, sequence_element, sequence_end)
