@@ -135,7 +135,6 @@ PDS_set_object_callbacks(&callbacks, object_begin, object_end)
 ```c
 PDS_set_scalar_callback(&callbacks, scalar)
 ```
-```
 ```c
 PDS_set_sequence_callbacks(&callbacks, sequence_begin, sequence_element, sequence_end)
 ```
