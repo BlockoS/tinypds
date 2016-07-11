@@ -12,7 +12,6 @@
 #define TINY_PDS_H
 #include <stdint.h>
 #include <sys/types.h>
-#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -1868,7 +1867,7 @@ int PDS_parse(PDS_callbacks *callbacks, const char *buffer, int len, void *user_
     {
         return 0;
     }
-    memcpy(&parser.callbacks, callbacks, sizeof(PDS_callbacks));
+    parser.callbacks = *callbacks;
     parser.line = parser.current = parser.first = buffer;
     parser.last = buffer + len;
     parser.line_num = 1;
