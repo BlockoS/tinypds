@@ -12,6 +12,21 @@ To instantiate the implementation add the following define in *ONE* source file 
 #define TINY_PDS_IMPL
 ```
 
+## Build ##
+A CMake configuration file is provided in order to build a static library, documentation or run a bundle of tests.
+A typical usage of CMake may be:
+  ```bash
+  mkdir build
+  cd build
+  cmake ..
+  make
+  ```
+On a Linux system, the Makefile will generate a static library `libtinypds.a` and stand-alone unit test binaries. 
+
+`make test` will run the unit tests and generate a report with `CTest`.
+  
+`make doc` will generate the documentation with [DoxyGen](http://www.stack.nl/~dimitri/doxygen/).
+
 ## Usage ##
 `tinypds` works on raw ASCII buffer. PDS file reading is left to the user.
 
@@ -146,9 +161,6 @@ PDS_set_error_callback(&callbacks, error)
 ```
     
 Finally the parsing is started by calling **PDS_parse**. An implementation example can be found in **test/PDS_parse.c**
-
-## Build ##
-A CMake configuration file is provided in order to build a static library, documentation or run a bundle of tests.
 
 ## License ##
 The MIT License
