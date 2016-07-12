@@ -429,19 +429,6 @@ int dummy_begin_end(void *user_data)
     return 1;
 }
 /**
- * Dummy callback for set and sequence elements.
- * @param [in]     first     Pointer to the first character of the element name. (unused)
- * @param [in]     last      Pointer to the last character of the element name. (unused)
- * @param [in,out] user_data PDS parser user data. (unused)
- * @return always 1. 
- */
-int dummy_element(const PDS_scalar *scalar, void *user_data)
-{
-    (void)scalar;
-    (void)user_data;
-    return 1;
-}
-/**
  * Object start callback.
  * Only IMAGE object is being parsed. All other objects are ignored.
  * @param [in]     first     Pointer to the first character of the object name.
@@ -612,7 +599,7 @@ int write_image(const char *filename, char *buffer, size_t size, PDS_payload *pa
     int bitpix, datatype;
     switch(payload->image.sample_type)
     {
-	    case PDS_SAMPLE_UINT_LSB:
+        case PDS_SAMPLE_UINT_LSB:
             switch(payload->image.sample_bits)
             {
                 case 8:
@@ -692,8 +679,8 @@ int main(int argc, char **argv)
     PDS_set_scalar_callback(&callbacks, parse_scalar);
     PDS_set_attribute_callbacks(&callbacks, parse_attribute_begin, parse_attribute_end);
     PDS_set_pointer_callbacks(&callbacks, parse_pointer_begin, parse_pointer_end);
-    PDS_set_set_callbacks(&callbacks, dummy_begin_end, dummy_element, dummy_begin_end);
-    PDS_set_sequence_callbacks(&callbacks, dummy_begin_end, dummy_element, dummy_begin_end);
+    PDS_set_set_callbacks(&callbacks, dummy_begin_end, dummy_begin_end);
+    PDS_set_sequence_callbacks(&callbacks, dummy_begin_end, dummy_begin_end);
     PDS_set_group_callbacks(&callbacks, group_begin, group_end);
     PDS_set_object_callbacks(&callbacks, object_begin, object_end);
 

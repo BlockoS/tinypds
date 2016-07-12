@@ -77,8 +77,9 @@ int main()
     PDS_parser parser;
     memset(&parser, 0, sizeof(PDS_parser));
     PDS_set_error_callback(&parser.callbacks, dummy_error);
-    PDS_set_set_callbacks(&parser.callbacks, set_begin_callback, set_element_callback, set_end_callback);
-
+    PDS_set_set_callbacks(&parser.callbacks, set_begin_callback, set_end_callback);
+    PDS_set_scalar_callback(&parser.callbacks, set_element_callback);
+    
     size_t i;
     test_foreach(i)
     {

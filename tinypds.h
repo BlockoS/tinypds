@@ -148,37 +148,47 @@ typedef union
 typedef int (*PDS_begin_callback) (const char *first, const char *last, void *user_data);
 /** End of current element callback. **/
 typedef int (*PDS_end_callback) (const char *first, const char *last, void *user_data);
-/** New scalar callback. **/
-typedef int (*PDS_scalar_callback) (const PDS_scalar *scalar, void *user_data);
+/** Token callbacks **/
+typedef struct
+{
+    PDS_begin_callback begin;
+    PDS_end_callback end;
+} PDS_token_callbacks;
+
 /** New collection callback. **/
 typedef int (*PDS_collection_begin_callback) (void *user_data);
 /** End of collection callback. **/
 typedef int (*PDS_collection_end_callback) (void *user_data);
+/** Collection callbacks **/
+typedef struct
+{   /** Collection start callback. **/
+    PDS_collection_begin_callback begin;
+    /** Collection end callback.   **/
+    PDS_collection_end_callback end;
+} PDS_collection_callbacks;
+
+/** New scalar callback. **/
+typedef int (*PDS_scalar_callback) (const PDS_scalar *scalar, void *user_data);
 /** Error callback. **/
 typedef void (*PDS_error_callback)(int line, const char *text, void *user_data);
+
 /**
  * PSD parser callbacks.
  */
 typedef struct
 {
-    struct
-    {   /** Declaration start callback. **/
-        PDS_begin_callback begin;
-        /** Declaration end callback.   **/
-        PDS_end_callback end;
-    } attribute /** Attribute callbacks. **/
-    , pointer   /** Pointer callbacks.   **/
-    , group     /** Group callbacks.     **/ 
-    , object;   /** Object callbacks.    **/
-    struct
-    {   /** Collection start callback. **/
-        PDS_collection_begin_callback begin;
-        /** Collection element callback. **/
-        PDS_scalar_callback element;
-        /** Collection end callback.   **/
-        PDS_collection_end_callback end;
-    } set       /** Set callbacks.       **/ 
-    , sequence; /** Sequence callbacks.  **/
+    /** Attribute callbacks. **/
+    PDS_token_callbacks attribute;
+    /** Pointer callbacks. **/
+    PDS_token_callbacks pointer;
+    /** Group callbacks. **/
+    PDS_token_callbacks group; 
+    /** Object callbacks. **/
+    PDS_token_callbacks object;
+    /** Set callbacks. **/
+    PDS_collection_callbacks set;
+    /** Sequence callbacks. **/
+    PDS_collection_callbacks sequence;
     /** Scalar callback. **/
     PDS_scalar_callback scalar;
     /** Display error message. **/
@@ -257,21 +267,17 @@ void PDS_set_object_callbacks(PDS_callbacks *callbacks, PDS_begin_callback begin
  * Set 'set' callbacks.
  * @param [in,out] callbacks Parser callbacks.
  * @param [in]     begin     Set start callback.
- * @param [in]     element   Set element callback.
  * @param [in]     end       Set end callback.
  */
 void PDS_set_set_callbacks(PDS_callbacks *callbacks, PDS_collection_begin_callback begin,
-                                                     PDS_scalar_callback           element,
                                                      PDS_collection_end_callback   end);
 /**
  * Set sequence callbacks.
  * @param [in,out] callbacks Parser callbacks.
  * @param [in]     begin     Sequence start callback.
- * @param [in]     element   Sequence element callback.
  * @param [in]     end       Sequence end callback.
  */
 void PDS_set_sequence_callbacks(PDS_callbacks *callbacks, PDS_collection_begin_callback begin,
-                                                          PDS_scalar_callback           element,
                                                           PDS_collection_end_callback   end);
 /**
  * Set scalar callback.
@@ -1497,42 +1503,20 @@ static int PDS_parse_scalar_value(PDS_parser *parser)
     return ret;
 }
 /**
- * Parse a value set.
- * set.begin, set.end callbacks are called at the beginning and end of each sets.
- * set.element is called for each set element.
- * @param [in,out] parser Parser.s
- * @return 1 if a set was successfully parsed, 0 otherwise.
+ * Parse comma separated scalars.
+ * @param [in,out] parser    Parser.
+ * @param [in]     delimiter Collection delimiter.
+ * @return 1 if the parsing is succesfull, 0 otherwise.
  */
-static int PDS_parse_set(PDS_parser *parser)
+static int PDS_parse_comma_separated(PDS_parser *parser, char delimiter)
 {
-    int ret;
+    int ret = 1;
     if(PDS_OK != parser->status)
     {
         return 0;
     }
 
-    if('{' != *parser->current++)
-    {
-        PDS_error(parser, PDS_INVALID_VALUE, "missing set separator");
-        return 0;
-    }
-    if(0 != parser->callbacks.set.begin)
-    {
-        if(0 == parser->callbacks.set.begin(parser->user_data))
-        {
-            return 0;
-        }
-    }
-    
-    ret = PDS_skip_whitespaces(parser);
-    if('}' == *parser->current)
-    {
-        parser->current++;
-        PDS_error(parser, PDS_INVALID_VALUE, "empty set");
-        return 0;
-    }
-
-    while(ret && (parser->current<=parser->last))
+    while(ret && (parser->current <= parser->last))
     {
         ret = PDS_skip_whitespaces(parser);
         if(ret)
@@ -1540,9 +1524,9 @@ static int PDS_parse_set(PDS_parser *parser)
             ret = PDS_parse_scalar_value(parser);
             if(ret)
             {
-                if(0 != parser->callbacks.set.element)
+                if(0 != parser->callbacks.scalar)
                 {
-                    if(0 == parser->callbacks.set.element(&parser->scalar, parser->user_data))
+                    if(0 == parser->callbacks.scalar(&parser->scalar, parser->user_data))
                     {
                         return 0;
                     }
@@ -1551,16 +1535,9 @@ static int PDS_parse_set(PDS_parser *parser)
                 if(ret)
                 {
                     char c = *parser->current++;
-                    if('}' == c)
+                    if(delimiter == c)
                     {
-                        if(0 != parser->callbacks.set.end)
-                        {
-                            if(0 == parser->callbacks.set.end(parser->user_data))
-                            {
-                                return 0;
-                            }
-                        }
-                        return 1;
+                        break;
                     }
                     else if(',' != c)
                     {
@@ -1570,13 +1547,82 @@ static int PDS_parse_set(PDS_parser *parser)
                 }
             }
         }
-    }
+    } 
     if(parser->current > parser->last)
     {
         PDS_error(parser, PDS_INVALID_VALUE, "missing separator");
         ret = 0;
     }
     return ret;
+}
+/**
+ * Parse 1D collection.
+ * @param [in,out] parser    Parser.
+ * @param [in]     start     Collection start delimiter.  
+ * @param [in]     end       Collection end delimiter.
+ * @param [in]     callbacks Collection callbacks.
+ * @return 1 if a set was successfully parsed, 0 otherwise.
+ */
+static int PDS_parser_collection_1D(PDS_parser *parser, char start, char end, PDS_collection_callbacks *callbacks)
+{
+    int ret;
+    if(PDS_OK != parser->status)
+    {
+        return 0;
+    }
+    if(0 == callbacks)
+    {
+        PDS_error(parser, PDS_INVALID_ARGUMENT, "invalid collection callbacks");
+        return PDS_INVALID_ARGUMENT;
+    }
+    ret = PDS_skip_whitespaces(parser);
+    if(!ret)
+    {
+        return ret;
+    }
+    if(start != *parser->current++)
+    {
+        PDS_error(parser, PDS_INVALID_VALUE, "missing opening separator");
+        return 0;
+    }
+    if(0 != callbacks->begin)
+    {
+        if(0 == callbacks->begin(parser->user_data))
+        {
+            return 0;
+        }
+    }
+    
+    ret = PDS_skip_whitespaces(parser);
+    if(end == *parser->current)
+    {
+        parser->current++;
+        PDS_error(parser, PDS_INVALID_VALUE, "empty collection");
+        return 0;
+    }
+    ret = PDS_parse_comma_separated(parser, end);
+    if(ret)
+    {
+        if(0 != callbacks->end)
+        {
+            if(0 == callbacks->end(parser->user_data))
+            {
+                return 0;
+            }
+        }
+    }
+    return ret;
+}
+/**
+ * Parse a value set.
+ * set.begin, set.end callbacks are called at the beginning and end of each sets.
+ * set.element is called for each set element.
+ * @param [in,out] parser Parser.
+ * @return 1 if a set was successfully parsed, 0 otherwise.
+ */
+static int PDS_parse_set(PDS_parser *parser)
+{
+    return PDS_parser_collection_1D(parser, '{', '}', &parser->callbacks.set);
 }
 /**
  * Parse a multidimensional sequence.
@@ -1588,12 +1634,10 @@ static int PDS_parse_set(PDS_parser *parser)
 static int PDS_parse_sequence(PDS_parser *parser)
 {
     int ret = 1;
-    int depth = 1;
     if(PDS_OK != parser->status)
     {
         return 0;
     }
-
     if('(' != *parser->current++)
     {
         PDS_error(parser, PDS_INVALID_VALUE, "missing sequence separator");
@@ -1604,63 +1648,57 @@ static int PDS_parse_sequence(PDS_parser *parser)
         if(0 == parser->callbacks.sequence.begin(parser->user_data))
         {
             return 0;
-        }   
+        }
     }
-    while(ret && (depth > 0) && (parser->current <= parser->last))
+    
+    ret = PDS_skip_whitespaces(parser);
+    if(!ret)
     {
-        ret = PDS_skip_whitespaces(parser);
-        if(ret)
+        return ret;
+    }
+
+    if('(' == *parser->current)
+    {
+        /* 2D sequence */
+        while(ret && (parser->current <= parser->last))
         {
-            if('(' == *parser->current)
+            ret = PDS_parser_collection_1D(parser, '(', ')', &parser->callbacks.sequence);
+            if(ret)
             {
-                ++parser->current;
-                ++depth;
-                if(0 != parser->callbacks.sequence.begin)
-                {
-                    if(0 == parser->callbacks.sequence.begin(parser->user_data))
-                    {
-                        return 0;
-                    }
-                }
-            }
-            else
-            {
-                ret = PDS_parse_scalar_value(parser);
+                char c;
+                ret = PDS_skip_whitespaces(parser);
                 if(ret)
                 {
-                    if(0 != parser->callbacks.sequence.element)
+                    c = *parser->current++;
+                    if(',' != c)
                     {
-                        if(0 == parser->callbacks.sequence.element(&parser->scalar, parser->user_data))
+                        if(')' == c)
                         {
+                            break;
+                        }
+                        else
+                        {
+                            PDS_error(parser, PDS_INVALID_VALUE, "Expected ')' delimiter");
                             return 0;
                         }
                     }
-                    ret = PDS_skip_whitespaces(parser);
-                    if(ret)
-                    {
-                        char c;
-                        while(((c = *parser->current++) == ')') && (depth > 0))
-                        {
-                            --depth;
-                            if(0 != parser->callbacks.sequence.end)
-                            {
-                                if(0 == parser->callbacks.sequence.end(parser->user_data))
-                                {
-                                    return 0;
-                                }
-                            }
-                            if(depth)
-                            {
-                                ret = PDS_skip_whitespaces(parser);
-                            }
-                        }
-                        if(ret && (depth > 0) && (',' != c))
-                        {
-                            ret = 0;
-                            PDS_error(parser, PDS_INVALID_VALUE, "invalid element separator");
-                        }
-                    }
                 }
+            }
+        }
+    }
+    else
+    {
+        /* 1D sequence */
+        ret = PDS_parse_comma_separated(parser, ')');
+    }
+    
+    if(ret)
+    {
+        if(0 != parser->callbacks.sequence.end)
+        {
+            if(0 == parser->callbacks.sequence.end(parser->user_data))
+            {
+                return 0;
             }
         }
     }
@@ -1932,21 +1970,17 @@ void PDS_set_object_callbacks(PDS_callbacks *callbacks, PDS_begin_callback begin
 }
 /* Set 'set' callbacks. */
 void PDS_set_set_callbacks(PDS_callbacks *callbacks, PDS_collection_begin_callback begin, 
-                                                     PDS_scalar_callback           element,
                                                      PDS_collection_end_callback   end)
 {
-    callbacks->set.begin   = begin;
-    callbacks->set.element = element;
-    callbacks->set.end     = end;
+    callbacks->set.begin = begin;
+    callbacks->set.end   = end;
 }
 /* Set sequence callbacks. */
 void PDS_set_sequence_callbacks(PDS_callbacks *callbacks, PDS_collection_begin_callback begin, 
-                                                          PDS_scalar_callback           element,
                                                           PDS_collection_end_callback   end)
 {
-    callbacks->sequence.begin   = begin;
-    callbacks->sequence.element = element;
-    callbacks->sequence.end     = end;
+    callbacks->sequence.begin = begin;
+    callbacks->sequence.end   = end;
 }
 /* Set scalar callback. */
 void PDS_set_scalar_callback(PDS_callbacks *callbacks, PDS_scalar_callback scalar)

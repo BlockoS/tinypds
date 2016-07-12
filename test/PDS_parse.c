@@ -70,13 +70,6 @@ int dummy_set_begin(void *user_data)
     printf(" {\n");
     return 1;
 }
-int dummy_set_element(const PDS_scalar *scalar, void *user_data)
-{
-    user_data_t *data = (user_data_t*)user_data;
-    print_tab(data->depth);
-    print_scalar(scalar);
-    return 1;
-}
 int dummy_set_end(void *user_data)
 {
     user_data_t *data = (user_data_t*)user_data;
@@ -90,13 +83,6 @@ int dummy_sequence_begin(void *user_data)
     user_data_t *data = (user_data_t*)user_data;
     data->depth++;
     printf("(\n");
-    return 1;
-}
-int dummy_sequence_element(const PDS_scalar *scalar, void *user_data)
-{
-    user_data_t *data = (user_data_t*)user_data;
-    print_tab(data->depth);
-    print_scalar(scalar);
     return 1;
 }
 int dummy_sequence_end(void *user_data)
@@ -198,8 +184,8 @@ int main(int argc, const char* argv[])
     PDS_set_scalar_callback(&callbacks, dummy_scalar);
     PDS_set_attribute_callbacks(&callbacks, dummy_attribute_begin, dummy_attribute_end);
     PDS_set_pointer_callbacks(&callbacks, dummy_pointer_begin, dummy_pointer_end);
-    PDS_set_set_callbacks(&callbacks, dummy_set_begin, dummy_set_element, dummy_set_end);
-    PDS_set_sequence_callbacks(&callbacks, dummy_sequence_begin, dummy_sequence_element, dummy_sequence_end);
+    PDS_set_set_callbacks(&callbacks, dummy_set_begin, dummy_set_end);
+    PDS_set_sequence_callbacks(&callbacks, dummy_sequence_begin, dummy_sequence_end);
     PDS_set_group_callbacks(&callbacks, dummy_group_begin, dummy_group_end);
     PDS_set_object_callbacks(&callbacks, dummy_object_begin, dummy_object_end);
 
