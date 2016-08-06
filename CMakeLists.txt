@@ -11,7 +11,12 @@ find_package(Doxygen)
 
 set(PROJECT_NAME tinypds)
 
-add_library(tinypds STATIC tinypds.c)
+file(WRITE ${CMAKE_BINARY_DIR}/tinypds.c "#define TINY_PDS_IMPL\n#include \"${CMAKE_SOURCE_DIR}/tinypds.h\"")
+add_library(tinypds STATIC ${CMAKE_BINARY_DIR}/tinypds.c)
+
+file(WRITE ${CMAKE_BINARY_DIR}/tinypds_dom.c "#define TINY_PDS_DOM_IMPL\n#include \"${CMAKE_SOURCE_DIR}/tinypds_dom.h\"")
+add_library(tinypds_dom STATIC ${CMAKE_BINARY_DIR}/tinypds_dom.c)
+
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wshadow -Wextra -std=c99")
 
 set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.in)
@@ -49,6 +54,9 @@ add_executable(PDS_string_compare test/PDS_string_compare.c ${TINY_PDS_TEST_SOUR
 add_executable(PDS_trim test/PDS_trim.c ${TINY_PDS_TEST_SOURCE_FILES})
 add_executable(PDS_parse test/PDS_parse.c ${TINY_PDS_TEST_SOURCE_FILES})
 
+add_executable(PDS_DOM_parse test/PDS_DOM_parse.c ${TINY_PDS_TEST_SOURCE_FILES})
+target_link_libraries(PDS_DOM_parse tinypds)
+
 add_test(PDS_find_first PDS_find_first )
 add_test(PDS_parse_datetime PDS_parse_datetime)
 add_test(PDS_parse_identifier PDS_parse_identifier)
@@ -68,3 +76,4 @@ add_test(PDS_trim PDS_trim)
 add_test(PDS_parse_GASPRA_SUMM_RTN.LBL PDS_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/GASPRA_SUMM_RTN.LBL)
 add_test(PDS_parse_LOR_0034851929_0X630_ENG_1.LBL PDS_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/LOR_0034851929_0X630_ENG_1.LBL)
 add_test(PDS_parse_W20140403T020157750ID20F12.IMG PDS_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/W20140403T020157750ID20F12.IMG)
+add_test(PDS_DOM_parse_W20140403T020157750ID20F12.IMG PDS_DOM_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/W20140403T020157750ID20F12.IMG)

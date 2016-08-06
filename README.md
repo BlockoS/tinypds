@@ -1,33 +1,41 @@
-# tinypds : a small PDS 3 parser
+# tinypds & tinypds_dom : small PDS 3 parsers
 [![Travis build Status](https://travis-ci.org/BlockoS/tinypds.svg)](https://travis-ci.org/BlockoS/tinypds)    [![Coverity Scan Build Status](https://scan.coverity.com/projects/8523/badge.svg)](https://scan.coverity.com/projects/blockos-tinypds)
 
 `tinypds` is a small and simple event-driven single header-only library PDS 3 parser.
+`tinypds_dom` is a small and simple DOM-like single header-only library PDS 3 parser.
 
-`tinypds` is written in C with little or no dependencies.
+`tinypds` and `tinypds_dom` written in C with little or no dependencies.
 
 In order to use `tinypds` in your project, just copy `tinypds.h` into your project.
-Note that this file contains both the interface and the implementation.
-To instantiate the implementation add the following define in *ONE* source file before including `tinypds.h`:
+Note that this file contain both the interface and the implementation.
+To instantiate the implementation of `tinypds` add the following define in *ONE* source file before including `tinypds.h`:
 ```c
 #define TINY_PDS_IMPL
+```
+
+`tinypds_dom` depends on `tinypds`. Just like `tinypds`, copy the `tinypds_dom.h` fil into your project.
+This file contains both the interface and the implementation. This means that you must define the following variable
+in *ONE* source file before including `tinypds_dom.h`:
+```c
+#define TINY_PDS_DOM_IMPL
 ```
 
 ## Build ##
 A CMake configuration file is provided in order to build a static library, documentation or run a bundle of tests.
 A typical usage of CMake may be:
-  ```bash
-  mkdir build
-  cd build
-  cmake ..
-  make
-  ```
-On a Linux system, the Makefile will generate a static library `libtinypds.a` and stand-alone unit test binaries. 
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
+On a Linux system, the Makefile will generate the static libraries `libtinypds.a`, `libtinypds_dom.a` and stand-alone unit test binaries. 
 
 `make test` will run the unit tests and generate a report with `CTest`.
   
 `make doc` will generate the documentation with [DoxyGen](http://www.stack.nl/~dimitri/doxygen/).
 
-## Usage ##
+## Usage - tinypds ##
 `tinypds` works on raw ASCII buffer. PDS file reading is left to the user.
 
 The `tinypds` events and associated callbacks are : 
@@ -161,6 +169,10 @@ PDS_set_error_callback(&callbacks, error)
 ```
     
 Finally the parsing is started by calling **PDS_parse**. An implementation example can be found in **test/PDS_parse.c**
+
+## Usage - tinypds_dom ##
+
+*TODO*
 
 ## License ##
 The MIT License
