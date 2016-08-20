@@ -282,7 +282,7 @@ void PDS_set_sequence_callbacks(PDS_callbacks *callbacks, PDS_collection_begin_c
 /**
  * Set scalar callback.
  * @param [in,out] callbacks Parser callbacks.
- * @param [in]     error     Scalar callback.
+ * @param [in]     scalar    Scalar callback.
  */
 void PDS_set_scalar_callback(PDS_callbacks *callbacks, PDS_scalar_callback scalar);
 /**

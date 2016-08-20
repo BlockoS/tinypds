@@ -21,6 +21,7 @@ EXCLUDE_PATTERNS      += */cmake/*
 EXCLUDE_PATTERNS      += */doc/*
 EXCLUDE_PATTERNS      += */data/*
 EXCLUDE_PATTERNS      += */test/*
+EXCLUDE_PATTERNS      += */examples/*
 EXCLUDE                = *.in
 JAVADOC_AUTOBRIEF      = YES
 MARKDOWN_SUPPORT       = YES

@@ -160,6 +160,7 @@ int PDS_DOM_sequence2d_rows(PDS_item *pds);
  * The item must be an attribute or a pointer, and the associated scalar
  * must be a 2d sequence.
  * @param [in] pds PDS item.
+ * @param [in] i   Row index.
  * @return number of columns for the ith row of current 2d sequence or -1 if the item
  *         is not an attribute or a pointer and if the associated scalar
  *         is not a 2d sequence.
@@ -216,7 +217,7 @@ for(element=PDS_DOM_group_begin(grp); NULL!=element;  element=PDS_DOM_sibling(el
  * Parse string buffer. 
  * @param [in]  buffer  Input string buffer.
  * @param [in]  len     Length of the input string buffer.
- * @param [out] parser  Parser.
+ * @param [out] pds     Pointer to the first element of the PDS tree.
  * @param [out] error   Parser error.
  * @return 1 if the PDS file was succesfully parser, 0 if an error occured.
  */
