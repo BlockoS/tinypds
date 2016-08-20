@@ -228,6 +228,30 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **pds, PDS_parse_erro
  * @param [in] pds PDS item.
  */
 void PDS_DOM_delete(PDS_item *pds);
+/**
+ * Defines the way the PDS tree is traversed.
+ */
+typedef enum
+{
+    /** Only the siblings of the current item are checked. **/
+    PDS_ONLY_SIBLINGS = 0,
+    /** Only the children of the current item are checked. 
+     *  The traversal is not recursive. **/
+    PDS_ONLY_CHILDREN,
+    /** Recursively checks all children **/
+    PDS_CHILDREN_RECURSIVE,
+    /** Recursively checks current item and its siblings. **/
+    PDS_SIBLINGS_RECURSIVE
+} PDS_search_type;
+/**
+ * Finds the first item which name matches.
+ * @param [in] name Name we are looking for.
+ * @param [in] current Current item.
+ * @param [in] search Search type.
+ * @param [in] check_current Check current item if not 0.
+ * @return A pointer to the first matching item or NULL if no match was found.
+ */
+PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type search, int check_current);
 
 #ifdef __cplusplus
 }
@@ -859,6 +883,51 @@ PDS_item* PDS_DOM_group_end(PDS_item* pds)
         }
     }
     return NULL;
+}
+/* Finds the first item which name matches. */
+PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type search, int check_current)
+{
+    const char *first;
+    const char *last;
+    PDS_item_impl *begin = (PDS_item_impl*)current;
+    PDS_item_impl *it;
+    PDS_item_impl *end;
+
+    /* sanity check */
+    if((NULL == name) || (NULL == current))
+    {
+        return NULL;
+    }
+    
+    first = name;
+    last  = name + strlen(name) - 1;
+
+    if(check_current && PDS_string_compare(current->name.first, current->name.last, first, last))
+    {
+        return current;
+    }
+    switch(search)
+    {
+        case PDS_ONLY_SIBLINGS:
+            for(it=begin->sibling, end=NULL; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->sibling)
+            {}
+            break;
+        case PDS_ONLY_CHILDREN:
+            for(it=begin->child, end=NULL; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->sibling)
+            {}
+            break;
+        case PDS_CHILDREN_RECURSIVE:
+            for(it=begin->child, end=begin->sibling; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->next)
+            {}
+            break;
+        case PDS_SIBLINGS_RECURSIVE:
+            end = (begin->parent) ? (begin->parent->sibling) : NULL;
+            for(it=begin->next; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->next)
+            {}
+            break;
+    }
+
+    return (PDS_item*)((it != end) ? it : NULL);
 }
 
 #endif /* TINY_PDS_DOM_IMPL */

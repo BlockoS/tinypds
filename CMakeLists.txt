@@ -57,6 +57,9 @@ add_executable(PDS_parse test/PDS_parse.c ${TINY_PDS_TEST_SOURCE_FILES})
 add_executable(PDS_DOM_parse test/PDS_DOM_parse.c ${TINY_PDS_TEST_SOURCE_FILES})
 target_link_libraries(PDS_DOM_parse tinypds)
 
+add_executable(PDS_DOM_find test/PDS_DOM_find.c ${TINY_PDS_TEST_SOURCE_FILES})
+target_link_libraries(PDS_DOM_find tinypds tinypds_dom)
+
 add_test(PDS_find_first PDS_find_first )
 add_test(PDS_parse_datetime PDS_parse_datetime)
 add_test(PDS_parse_identifier PDS_parse_identifier)
@@ -77,3 +80,4 @@ add_test(PDS_parse_GASPRA_SUMM_RTN.LBL PDS_parse ${CMAKE_CURRENT_SOURCE_DIR}/tes
 add_test(PDS_parse_LOR_0034851929_0X630_ENG_1.LBL PDS_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/LOR_0034851929_0X630_ENG_1.LBL)
 add_test(PDS_parse_W20140403T020157750ID20F12.IMG PDS_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/W20140403T020157750ID20F12.IMG)
 add_test(PDS_DOM_parse_W20140403T020157750ID20F12.IMG PDS_DOM_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/W20140403T020157750ID20F12.IMG)
+add_test(PDS_DOM_find PDS_DOM_find)
