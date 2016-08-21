@@ -240,45 +240,60 @@ Finally the parsing is started by calling **PDS_parse**. An implementation examp
   ```c
   PDS_DOM_typeof(pds)
   ```
+  Returns the type of current item (attribute, pointer, object or group).
   ```c
   PDS_DOM_is_attribute(pds)
   ```
+  Returns 1 if the current item is an attribute and 0 otherwise.
   ```c
   PDS_DOM_is_pointer(pds)
   ```
+  Returns 1 if the current item is a pointer and 0 otherwise.
   ```c
   PDS_DOM_is_object(pds)
   ```
+  Returns 1 if the current item is an object and 0 otherwise.
   ```c
   PDS_DOM_is_group(pds)
   ```
+  Returns 1 if the current item is a group and 0 otherwise.
   ```c
   PDS_DOM_has_scalar(pds)
   ```
+  Returns 1 if the current item contains a scalar. This is the case for
+  attributes and pointers.
   ```c
   PDS_scalar_type PDS_DOM_scalar_typeof(PDS_item *pds)
   ```
+  Returns the type of the scalar attached to current item.
   ```c
   int PDS_DOM_scalar_count(PDS_item *pds)
   ```
+  Returns the number of scalars attached to current item.
   ```c
   int PDS_DOM_scalar_get(PDS_item *pds, PDS_scalar *scalar)
   ```
+  Gets the scalar attached to current item. This function will return an error for sets and sequences.
   ```c
   int PDS_DOM_set_get(PDS_item *pds, PDS_scalar *scalar, int i)
   ```
+  Gets the scalar at index **i** in the set attached to current item
   ```c
   int PDS_DOM_sequence1d_get(PDS_item *pds, PDS_scalar *scalar, int i)
   ```
+  Gets the scalar at index **i** in the 1 dimensional sequence attached to current item.
   ```c
   int PDS_DOM_sequence2d_get(PDS_item *pds, PDS_scalar *scalar, int i, int j)
   ```
+  Gets the scalar at row **i** and column **j** in the 2 dimensional sequence attached to current item.
   ```c
   int PDS_DOM_sequence2d_rows(PDS_item *pds)
   ```
+  Returns the number of rows of the 2 dimension sequence attached to current item.
   ```c
   int PDS_DOM_sequence2d_cols(PDS_item *pds, int i)
   ```
+  Returns the number of columns of the **i**th row of the 2 dimension sequence attached to current item.
 
 ## License ##
 The MIT License
