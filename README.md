@@ -171,9 +171,115 @@ PDS_set_error_callback(&callbacks, error)
 Finally the parsing is started by calling **PDS_parse**. An implementation example can be found in **test/PDS_parse.c**
 
 ## Usage - tinypds_dom ##
-
-*TODO*
+`tinypds_dom` works on raw ASCII buffer just like `tinypds`.
+* **parsing**
+  ```c
+  int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **pds, PDS_parse_error *error)
+  ```
+  * **buffer** is a string of **len** characters containing the PDS document to be parsed.
+  * **pds** will contain the pointer to first item of the PDS tree.
+  * If something went wrong, **error** will contain the line where the error occured and a description of that error.
+  * This function returns 1 upon success and 0 otherwise.
+  
+* **cleanup**
+  ```c
+  void PDS_DOM_delete(PDS_item *pds)
+  ```
+  This function releases the memory used by the PDS tree pointed by **pds**.
+  
+* **query**
+  ```c
+  PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type search, int check_current)
+  ```
+  This function will search the PDS tree for the first item (object, group or attribute) which name matches the one given as argument.
+  The **PDS_item** argument gives the starting point of the search. 
+  The **PDS_search_type** parameter specifies the way the tree should be traversed. 4 modes are available.
+    * PDS_ONLY_SIBLINGS only the siblings of the current item will be checked.
+    * PDS_ONLY_CHILDREN only the children of the current item will be checked. 
+    * PDS_CHILDREN_RECURSIVE all the children of the current item will be recursively checked.
+    * PDS_SIBLINGS_RECURSIVE all siblings and their associated children will be recursively checked.
+  
+  The last parameter indicates if the starting point must be checked or ignored.
+  
+* **traversal**
+  The following functions and macros give a way to walk along the PDS tree.
+  ```c
+    PDS_item* PDS_DOM_sibling(PDS_item* pds)
+  ```
+  Returns a pointer the first sibling item.
+  ```c
+    PDS_item* PDS_DOM_parent(PDS_item* pds)
+  ```
+  Returns a pointer to the parent item.
+  ```c
+    PDS_item* PDS_DOM_object_begin(PDS_item* pds)
+  ```
+  Returns a pointer to the first item of the current object.
+  ```c
+    PDS_item* PDS_DOM_object_end(PDS_item* pds)
+  ```
+  Returns a pointer to one past the last item of current object. 
+  ```c
+    PDS_DOM_object_foreach(obj, element)
+  ```
+  Iterates over object items. The iteration is only performed on the first level.
+  ```c
+    PDS_item* PDS_DOM_group_begin(PDS_item* pds)
+  ```
+  Returns a pointer to the first item of the current group.
+  ```c
+    PDS_item* PDS_DOM_group_end(PDS_item* pds)
+  ```
+  Returns a pointer to one past the last item of current group. 
+  ```c
+    PDS_DOM_group_foreach(grp, element)
+  ```
+  Iterates over group items
+  
+* **data access**
+  ```c
+  PDS_DOM_typeof(pds)
+  ```
+  ```c
+  PDS_DOM_is_attribute(pds)
+  ```
+  ```c
+  PDS_DOM_is_pointer(pds)
+  ```
+  ```c
+  PDS_DOM_is_object(pds)
+  ```
+  ```c
+  PDS_DOM_is_group(pds)
+  ```
+  ```c
+  PDS_DOM_has_scalar(pds)
+  ```
+  ```c
+  PDS_scalar_type PDS_DOM_scalar_typeof(PDS_item *pds)
+  ```
+  ```c
+  int PDS_DOM_scalar_count(PDS_item *pds)
+  ```
+  ```c
+  int PDS_DOM_scalar_get(PDS_item *pds, PDS_scalar *scalar)
+  ```
+  ```c
+  int PDS_DOM_set_get(PDS_item *pds, PDS_scalar *scalar, int i)
+  ```
+  ```c
+  int PDS_DOM_sequence1d_get(PDS_item *pds, PDS_scalar *scalar, int i)
+  ```
+  ```c
+  int PDS_DOM_sequence2d_get(PDS_item *pds, PDS_scalar *scalar, int i, int j)
+  ```
+  ```c
+  int PDS_DOM_sequence2d_rows(PDS_item *pds)
+  ```
+  ```c
+  int PDS_DOM_sequence2d_cols(PDS_item *pds, int i)
+  ```
 
 ## License ##
 The MIT License
-Copyright (c) 2015 Vincent Cruz
+Copyright (c) 2016 Vincent Cruz
