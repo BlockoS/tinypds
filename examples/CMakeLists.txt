@@ -10,11 +10,12 @@ find_package(CFITSIO)
 
 include_directories(${CFITSIO_INCLUDE_DIR} ..)
 
-add_library(tinypds STATIC ../tinypds.c)
-set_property(TARGET tinypds PROPERTY C_STANDARD 99)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wshadow -Wextra")
 
-add_executable(rosetta_extract rosetta_extract.c)
+add_executable(rosetta_extract rosetta_extract.c utils.c)
 set_property(TARGET rosetta_extract PROPERTY C_STANDARD 99)
-target_link_libraries(rosetta_extract tinypds ${CFITSIO_LIBRARIES})
+target_link_libraries(rosetta_extract ${CFITSIO_LIBRARIES})
 
+add_executable(rosetta_extract_dom rosetta_extract_dom.c utils.c)
+set_property(TARGET rosetta_extract PROPERTY C_STANDARD 99)
+target_link_libraries(rosetta_extract_dom ${CFITSIO_LIBRARIES})
