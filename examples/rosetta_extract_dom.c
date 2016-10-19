@@ -85,6 +85,9 @@ int main(int argc, char **argv)
 
     int ret;
 
+    buffer = NULL;
+    root = NULL;
+
     if(4 != argc)
     {
         usage();
@@ -149,6 +152,7 @@ int main(int argc, char **argv)
             }
         }
     }
+    PDS_DOM_delete(root);
     free(buffer);
     return ret ? EXIT_SUCCESS : EXIT_FAILURE;
 }
