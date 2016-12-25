@@ -1,0 +1,114 @@
+PDS_VERSION_ID                     = PDS3                                     
+                                                                              
+RECORD_TYPE                        = "FIXED_LENGTH"                           
+RECORD_BYTES                       = 2880                                     
+FILE_RECORDS                       = 3                                        
+                                                                              
+^HEADER                            = "0844636876_lvl1_0.fit"                  
+^COMBINED_SPECTRUM                 = ("0844636876_lvl1_0.fit", 3)             
+                                                                              
+DATA_SET_ID                        = "HAY-A-NIRS-2-NIRSRAW-V1.0"              
+PRODUCT_NAME                       = "0844636876_LVL1_0_FIT"                  
+PRODUCT_ID                         = "0844636876_LVL1_0_FIT"                  
+INSTRUMENT_HOST_ID                 = "HAY"                                    
+INSTRUMENT_HOST_NAME               = "HAYABUSA"                               
+INSTRUMENT_ID                      = "NIRS"                                   
+INSTRUMENT_NAME                    = "NEAR-INFRARED SPECTROMETER"             
+TARGET_NAME                        = "JUPITER"                                
+TARGET_TYPE                        = "PLANET"                                 
+START_TIME                         = 2004-03-09T11:03:00                      
+STOP_TIME                          = 2004-03-09T11:03:17                      
+PRODUCT_CREATION_TIME              = 2010-07-01                               
+                                                                              
+EXPOSURE_DURATION                  = 3.27680 <SECOND>                         
+HAY:STACK_COUNT                    = 128                                      
+                                                                              
+OBJECT                             = HEADER                                   
+ BYTES                             = 5760                                     
+ HEADER_TYPE                       = "FITS"                                   
+ INTERCHANGE_FORMAT                = "BINARY"                                 
+ RECORDS                           = 2                                        
+END_OBJECT                         = HEADER                                   
+                                                                              
+                                                                              
+OBJECT                             = COMBINED_SPECTRUM                        
+ INTERCHANGE_FORMAT                = BINARY                                   
+ COLUMNS                           = 4                                        
+ ROW_BYTES                         = 1024                                     
+ ROWS                              = 1                                        
+ DESCRIPTION                       = "Hayabusa NIRS raw spectrum.  The keyword
+        HAY:STACK_COUNT indicates the number of stacked spectra represented by
+        this averaged spectrum.  The four columns of the table give the       
+        average, standard deviation, maximum, and minimum over the stacked    
+        spectra."                                                             
+                                                                              
+ OBJECT                            = COLUMN                                   
+  COLUMN_NUMBER                    = 1                                        
+  MINIMUM_SAMPLING_PARAMETER       = 763.5 <NANOMETER>                        
+  MAXIMUM_SAMPLING_PARAMETER       = 2247.8 <NANOMETER>                       
+  SAMPLING_PARAMETER_INTERVAL      = -23.56 <NANOMETER>                       
+  SAMPLING_PARAMETER_UNIT          = NANOMETER                                
+  NAME                             = AVERAGE_RAW_SPECTRUM                     
+  START_BYTE                       = 1                                        
+  DATA_TYPE                        = FLOAT                                    
+  BYTES                            = 256                                      
+  UNIT                             = "DN"                                     
+  ITEMS                            = 64                                       
+  ITEM_BYTES                       = 4                                        
+  DESCRIPTION                      = "Average data value for each sample over 
+        the stacked spectra."                                                 
+ END_OBJECT                        = COLUMN                                   
+                                                                              
+ OBJECT                            = COLUMN                                   
+  COLUMN_NUMBER                    = 2                                        
+  MINIMUM_SAMPLING_PARAMETER       = 763.5 <NANOMETER>                        
+  MAXIMUM_SAMPLING_PARAMETER       = 2247.8 <NANOMETER>                       
+  SAMPLING_PARAMETER_INTERVAL      = -23.56 <NANOMETER>                       
+  SAMPLING_PARAMETER_UNIT          = NANOMETER                                
+  NAME                             = STDEV_RAW_SPECTRUM                       
+  START_BYTE                       = 257                                      
+  DATA_TYPE                        = FLOAT                                    
+  BYTES                            = 256                                      
+  UNIT                             = "DN"                                     
+  ITEMS                            = 64                                       
+  ITEM_BYTES                       = 4                                        
+  DESCRIPTION                      = "Standard deviation over the data values 
+        for each sample of the stacked spectra."                              
+ END_OBJECT                        = COLUMN                                   
+                                                                              
+ OBJECT                            = COLUMN                                   
+  COLUMN_NUMBER                    = 3                                        
+  MINIMUM_SAMPLING_PARAMETER       = 763.5 <NANOMETER>                        
+  MAXIMUM_SAMPLING_PARAMETER       = 2247.8 <NANOMETER>                       
+  SAMPLING_PARAMETER_INTERVAL      = -23.56 <NANOMETER>                       
+  SAMPLING_PARAMETER_UNIT          = NANOMETER                                
+  NAME                             = MAX_RAW_SPECTRUM                         
+  START_BYTE                       = 513                                      
+  DATA_TYPE                        = FLOAT                                    
+  BYTES                            = 256                                      
+  UNIT                             = "DN"                                     
+  ITEMS                            = 64                                       
+  ITEM_BYTES                       = 4                                        
+  DESCRIPTION                      = "Maximum data value for each sample over 
+        the stacked spectra."                                                 
+ END_OBJECT                        = COLUMN                                   
+                                                                              
+ OBJECT                            = COLUMN                                   
+  COLUMN_NUMBER                    = 4                                        
+  MINIMUM_SAMPLING_PARAMETER       = 763.5 <NANOMETER>                        
+  MAXIMUM_SAMPLING_PARAMETER       = 2247.8 <NANOMETER>                       
+  SAMPLING_PARAMETER_INTERVAL      = -23.56 <NANOMETER>                       
+  SAMPLING_PARAMETER_UNIT          = NANOMETER                                
+  NAME                             = MIN_RAW_SPECTRUM                         
+  START_BYTE                       = 769                                      
+  DATA_TYPE                        = FLOAT                                    
+  BYTES                            = 256                                      
+  UNIT                             = "DN"                                     
+  ITEMS                            = 64                                       
+  ITEM_BYTES                       = 4                                        
+  DESCRIPTION                      = "Minimum data value for each sample over 
+        the stacked spectra."                                                 
+ END_OBJECT                        = COLUMN                                   
+END_OBJECT                         = COMBINED_SPECTRUM                        
+                                                                              
+END                                                                           

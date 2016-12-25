@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <tinypds.h>
+
 #define check(e) if(!(e)) { fprintf(stderr, "%s+%d: test failed \"%s\"\n", __FILE__, __LINE__, #e); return EXIT_FAILURE; }
 
 #define begin_test_data(expected_t) \
@@ -28,6 +30,6 @@ struct \
 #define test_expected(i) (tv[(i)].expected)
 #define test_foreach(i) for(i=0; i<(sizeof(tv)/sizeof(tv[0])); ++i) 
 
-void dummy_error(int line, const char *msg, void *user_data);
+void dummy_error(const PDS_error_description* desc, void *user_data);
 
 #endif /* TEST_H */

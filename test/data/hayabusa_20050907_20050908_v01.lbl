@@ -1,0 +1,32 @@
+PDS_VERSION_ID               = PDS3
+RECORD_TYPE                  = FIXED_LENGTH
+RECORD_BYTES                 = 1024
+^SPICE_KERNEL                = "hayabusa_20050907_20050908_v01.bc"
+MISSION_NAME                 = HAYABUSA
+SPACECRAFT_NAME              = HAYABUSA
+DATA_SET_ID                  = "HAY-A-SPICE-6-V1.0"
+KERNEL_TYPE_ID               = CK
+PRODUCT_ID                   = "hayabusa_20050907_20050908_v01.bc"
+PRODUCT_CREATION_TIME        = 2009-11-30T13:48:44
+PRODUCER_ID                  = JAXA
+MISSION_PHASE_NAME           = "CRUISE TO ASTEROID"
+PRODUCT_VERSION_TYPE         = ACTUAL
+PLATFORM_OR_MOUNTING_NAME    = "N/A"
+START_TIME                   = 2005-09-07T00:13:17.286
+STOP_TIME                    = 2005-09-08T07:16:57.969
+SPACECRAFT_CLOCK_START_COUNT = "1/2355775455:253"
+SPACECRAFT_CLOCK_STOP_COUNT  = "1/2359353810:226"
+TARGET_NAME                  = "25143 ITOKAWA"
+INSTRUMENT_NAME              = "HAYABUSA SPACECRAFT BUS"
+NAIF_INSTRUMENT_ID           = -130000
+SOURCE_PRODUCT_ID            = "N/A"
+NOTE                         = "See comments in the file for details"
+OBJECT                       = SPICE_KERNEL
+  INTERCHANGE_FORMAT         = BINARY
+  KERNEL_TYPE                = POINTING
+  DESCRIPTION                = "SPICE C-kernel (CK) file containing
+Hayabusa spacecraft orientation, covering a short period of the surveying
+and collection phase of the mission, created during operations by the
+Hayabusa Joint Science Team. "
+END_OBJECT                   = SPICE_KERNEL
+END

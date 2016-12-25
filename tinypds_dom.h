@@ -62,15 +62,6 @@ typedef enum
     PDS_SEQUENCE_2D
 } PDS_scalar_type;
 
-/** PDS parsing error **/
-typedef struct
-{
-    /** Line where the last error occured. **/
-    int line;
-    /** Error message. **/
-    const char *msg;
-} PDS_parse_error;
-
 /** PDS item **/
 typedef struct
 {
@@ -218,10 +209,10 @@ for(element=PDS_DOM_group_begin(grp); NULL!=element;  element=PDS_DOM_sibling(el
  * @param [in]  buffer  Input string buffer.
  * @param [in]  len     Length of the input string buffer.
  * @param [out] pds     Pointer to the first element of the PDS tree.
- * @param [out] error   Parser error.
+ * @param [out] error   Description of the last encountered error.
  * @return 1 if the PDS file was succesfully parser, 0 if an error occured.
  */
-int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **pds, PDS_parse_error *error);
+int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **pds, PDS_error_description *error);
 /**
  * Release object resources.
  * Recursively release any resources used by the current item and its
@@ -307,7 +298,7 @@ typedef struct
     PDS_item_impl *current;
     PDS_item_impl *previous;
     int dimension;
-    PDS_parse_error error;
+    PDS_error_description error;
 } PDS_DOM_payload;
 
 /* Create new PDS item */
@@ -641,19 +632,18 @@ static int PDS_DOM_parse_object_end(const char *first, const char *last, void *u
     return 1;
 }
 /* Error callback. */
-static void PDS_DOM_error(int line, const char *msg, void *user_data)
+static void PDS_DOM_error(const PDS_error_description* desc, void *user_data)
 {
     PDS_DOM_payload *payload = (PDS_DOM_payload*)user_data;
     if(NULL == payload)
     {
         return;
     }
-    payload->error.line = line;
-    payload->error.msg  = msg;
+    payload->error = *desc;
 }
 
 /* Parse string buffer. */
-int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **item, PDS_parse_error *error)
+int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **item, PDS_error_description *error)
 {
     PDS_callbacks callbacks;
     PDS_DOM_payload payload;
@@ -695,13 +685,15 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **item, PDS_parse_err
     
     *item = NULL;
  
-    payload.error.line = 0;
-    payload.error.msg   = "ok";
+    payload.error.line     = 0;
+    payload.error.number   = 0;
+    payload.error.position = 0;
+    payload.error.status   = PDS_OK;
+    payload.error.msg      = "ok";
  
     /* Parse buffer */
     ret = PDS_parse(&callbacks, buffer, len, &payload);
-    error->line = payload.error.line;
-    error->msg  = payload.error.msg;
+    *error = payload.error;
     if(!ret)
     {
         PDS_DOM_delete((PDS_item*)payload.root);

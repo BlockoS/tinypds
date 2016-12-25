@@ -1,6 +1,3 @@
-// (todo) version
-// (todo) macro for incomplete parse check
-
 /* 
  * Tiny PDS3 parser
  *
@@ -173,8 +170,23 @@ typedef struct
 
 /** New scalar callback. **/
 typedef int (*PDS_scalar_callback) (const PDS_scalar *scalar, void *user_data);
+
+/** Error description. **/
+typedef struct
+{
+    /** Pointer to the beginning of the line being parsed. **/
+    const char *line;
+    /** Line number. **/
+    int number;
+    /** Position of the erroneous character character. **/
+    int position;
+    /** Current status @see PDS_STATUS **/
+    int status;
+    /** Error message. **/
+    const char *msg;
+} PDS_error_description;
 /** Error callback. **/
-typedef void (*PDS_error_callback)(int line, const char *text, void *user_data);
+typedef void (*PDS_error_callback)(const PDS_error_description *description, void *user_data);
 
 /**
  * PSD parser callbacks.
@@ -302,7 +314,6 @@ void PDS_set_error_callback(PDS_callbacks *callbacks, PDS_error_callback error);
  * @param [in] len       Length of the input buffer.
  * @param [in] user_data User data.
  * @return 1 if the PDS data contained in the input buffer was successfully parsed, or 0 if an error occured.
- * (todo) return status (incomplete, error, ok)
  */
 int PDS_parse(PDS_callbacks *callbacks, const char *buffer, int len, void *user_data);
 
@@ -431,7 +442,13 @@ static void PDS_error(PDS_parser *parser, int error, const char *message)
     parser->status = error;
     if(0 != parser->callbacks.error)
     {
-        parser->callbacks.error(parser->line_num, message, parser->user_data);
+        PDS_error_description description;
+        description.line     = parser->line;
+        description.number   = parser->line_num;
+        description.position = parser->current - parser->line;
+        description.status   = error;
+        description.msg      = message;
+        parser->callbacks.error(&description, parser->user_data);
     }
 }
 /**
@@ -1799,7 +1816,6 @@ static int PDS_parse_statement(PDS_parser *parser)
     ret = PDS_parse_lhs(parser);
     if(!ret)
     {
-        PDS_error(parser, parser->status, "invalid left-hand value");
         return 0;
     }
 

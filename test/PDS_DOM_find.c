@@ -59,7 +59,7 @@ int main()
 {
     PDS_item *found;
     PDS_scalar scalar;
-    PDS_parse_error err;
+    PDS_error_description err;
     int ret;
 
     atexit(cleanup);
@@ -67,7 +67,7 @@ int main()
     ret = PDS_DOM_parse(pds_string, strlen(pds_string), &item, &err);
     if(!ret)
     {
-        fprintf(stderr, "parse error line %d: %s\n", err.line, err.msg);
+        fprintf(stderr, "parse error line %d:%d: %s\n", err.number, err.position, err.msg);
         return EXIT_FAILURE;
     }
 

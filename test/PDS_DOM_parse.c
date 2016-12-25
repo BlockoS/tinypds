@@ -124,7 +124,7 @@ int main(int argc, const char* argv[])
     char *buffer;
 
     PDS_item *item;
-    PDS_parse_error err;
+    PDS_error_description err;
     int ret;
 
     const char *filename = argv[1];
