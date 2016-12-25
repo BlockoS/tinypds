@@ -193,14 +193,13 @@ int image_sample_type(const PDS_scalar *scalar, PDS_payload *payload)
 }
 /**
  * Print parsing error message to the standard error output.
- * @param [in] line   Line in the input file where the error occured.
- * @param [in] msg    Error message.
+ * @param [in] desc   Error description.
  * @param [in] unused PDS parser user data.
  */
-void print_error(int line, const char *msg, void *unused)
+void print_error(const PDS_error_description* desc, void *unused)
 {
     (void)unused;
-    fprintf(stderr, "line %d: %s\n", line, msg);
+    fprintf(stderr, "line %d:%d: %s\n", desc->number, desc->position, desc->msg);
 }
 /**
  * Global attribute parser.

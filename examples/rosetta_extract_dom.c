@@ -79,7 +79,7 @@ static int image_sample_type(const PDS_scalar *scalar, uint8_t *sample_type)
 int main(int argc, char **argv)
 {
     PDS_item *root;
-    PDS_parse_error err;
+    PDS_error_description err;
     char *buffer;
     size_t size;
 
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
     ret = PDS_DOM_parse(buffer, size, &root, &err);
     if(!ret)
     {
-        fprintf(stderr, "%s: parse error line %d : %s\n", argv[2], err.line, err.msg);
+        fprintf(stderr, "%s: parse error line %d:%d : %s\n", argv[2], err.number, err.position, err.msg);
     }
     else
     {
