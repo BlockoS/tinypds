@@ -134,10 +134,14 @@ The `tinypds` events and associated callbacks are :
 
 * **parsing error**
   ```c
-  void error(int line, const char *msg, void *user_data)
+  void error(const PDS_description *desc, void *user_data)
   ```
-  * **line** is the number of the line at which the error occured.
-  * **msg** is the error message.
+  * **desc** contains the description of the current error:
+    * **line** pointer to the beginning of the line being parsed.
+    * **number** current line number.
+    * **position** index of the erroneous character in the line.
+    * **status** current status.
+    * **msg** error message.
   * **user_data** is a pointer to the user data.
 
 Callbacks returning an **int** must return 0 if an error occured.
@@ -174,7 +178,7 @@ Finally the parsing is started by calling **PDS_parse**. An implementation examp
 `tinypds_dom` works on raw ASCII buffer just like `tinypds`.
 * **parsing**
   ```c
-  int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **pds, PDS_parse_error *error)
+  int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **pds, PDS_error_description *error)
   ```
   * **buffer** is a string of **len** characters containing the PDS document to be parsed.
   * **pds** will contain the pointer to first item of the PDS tree.
