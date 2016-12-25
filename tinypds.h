@@ -1,3 +1,6 @@
+// (todo) version
+// (todo) macro for incomplete parse check
+
 /* 
  * Tiny PDS3 parser
  *
@@ -26,6 +29,7 @@ enum PDS_STATUS
     PDS_INVALID_VALUE,
     PDS_INVALID_RANGE,
     PDS_INVALID_ARGUMENT,
+    PDS_INCOMPLETE
 };
 /**
  * Value types.
@@ -298,6 +302,7 @@ void PDS_set_error_callback(PDS_callbacks *callbacks, PDS_error_callback error);
  * @param [in] len       Length of the input buffer.
  * @param [in] user_data User data.
  * @return 1 if the PDS data contained in the input buffer was successfully parsed, or 0 if an error occured.
+ * (todo) return status (incomplete, error, ok)
  */
 int PDS_parse(PDS_callbacks *callbacks, const char *buffer, int len, void *user_data);
 
@@ -430,6 +435,68 @@ static void PDS_error(PDS_parser *parser, int error, const char *message)
     }
 }
 /**
+ * Skip comment.
+ * Comments are C-like comments, but unlike them they must fit on a single line.
+ * Nested comments are forbidden.
+ * @param [in,out] parser PDS parser context.
+ * @return 0 if an error occured, 1 upon success.
+ */
+static int PDS_skip_comment(PDS_parser *parser)
+{
+    static const char g_comment_start[] = "/*";
+    int i;
+    
+    /* The first 2 characters must be '/' and '*'. */
+    for(i=0; (i < 2) && (parser->current <= parser->last); parser->current++, i++)
+    {
+        if(g_comment_start[i] != *parser->current)
+        {
+            PDS_error(parser, PDS_INVALID_VALUE, "invalid input");
+            return 0;
+        }
+    }
+
+    for(i = 0; parser->current <= parser->last; parser->current++)
+    {
+        if(('\r' == *parser->current) || ('\n' == *parser->current))
+        {
+            PDS_error(parser, PDS_INVALID_VALUE, "multi-line comment");
+            return 0;
+        }
+        else if('*' == *parser->current)
+        {
+            /* If the previous character is '/', we have a nested comment. */
+            if(1 == i)
+            {
+                PDS_error(parser, PDS_INVALID_VALUE, "nested comments");
+                return 0;
+            }
+            i = 2;
+        }
+        else if('/' == *parser->current)
+        {
+            /* If the previous character is '*', we read our comment. */
+            if(2 == i)
+            {
+                break;
+            }
+            i = 1;
+        }
+        else
+        {
+            /* All other characters are ignored. */
+            i = 0;
+        }
+    }
+    /* No data left. */
+    if(parser->current > parser->last)
+    {
+        PDS_error(parser, PDS_INCOMPLETE, "premature end of input");
+        return 0;
+    }
+    return 1;
+}
+/**
  * Skip whitespaces and comments from string.
  * A white space is either a space (' '), form-feed ('\\f'), newline ('\\n'),
  * carriage return ('\\r'), horizontal tab ('\\t') or vertical tab ('\\v').
@@ -445,7 +512,7 @@ static int PDS_skip_whitespaces(PDS_parser *parser)
         return 0;
     }
 
-    for( ;parser->current <= parser->last; parser->current++)
+    for( ; parser->current <= parser->last; parser->current++)
     {
         /* Skip spaces and keep track of the current line number. */
         if(PDS_isspace(*parser->current))
@@ -457,39 +524,11 @@ static int PDS_skip_whitespaces(PDS_parser *parser)
             }
         }
         /* Skip comment. */
-        else if((parser->current <= parser->last) && ('/' == *parser->current))
+        else if('/' == *parser->current)
         {
-            ++parser->current;
-            if(parser->current >= parser->last)
+            if(0 == PDS_skip_comment(parser))
             {
-                PDS_error(parser, PDS_INVALID_VALUE, "premature end of input");
                 return 0;
-            }
-            if('*' != *parser->current)
-            {
-                PDS_error(parser, PDS_INVALID_VALUE, "invalid input");
-                return 0;
-            }
-            ++parser->current;
-            for( ;parser->current <= parser->last; parser->current++)
-            {
-                if(('\r' == *parser->current) || ('\n' == *parser->current))
-                {
-                    PDS_error(parser, PDS_INVALID_VALUE, "multi-line comment");
-                    return 0;
-                }
-                if('/' == *parser->current)
-                {
-                    if('*' == *(parser->current-1))
-                    {
-                        break;
-                    }
-                    if((parser->current < parser->last) && ('*' == *(parser->current+1)))
-                    {
-                        PDS_error(parser, PDS_INVALID_VALUE, "nested comments");
-                        return 0;
-                    }
-                }
             }
         }
         else
@@ -1762,14 +1801,17 @@ static int PDS_parse_statement(PDS_parser *parser)
     {
         PDS_error(parser, parser->status, "invalid left-hand value");
         return 0;
-    }   
+    }
+
     if(PDS_TOKEN_END == parser->token.type)
     {
         line = parser->line_num;
-        if(!PDS_skip_whitespaces(parser))
+        ret = PDS_skip_whitespaces(parser);
+        if(!ret)
         {
             return 0;
         }
+
         /* Check for new line. */
         if(parser->line_num <= line)
         {
@@ -1785,7 +1827,7 @@ static int PDS_parse_statement(PDS_parser *parser)
     {
         return 0;
     }
-
+    
     if('=' != *parser->current)
     {
         PDS_error(parser, PDS_INVALID_VALUE, "missing or invalid statement delimiter");
@@ -1874,15 +1916,17 @@ static int PDS_parse_statement(PDS_parser *parser)
             return 0;
     }
 
-    if(!PDS_skip_whitespaces(parser))
+    ret = PDS_skip_whitespaces(parser);
+    if(!ret)
     {
         return 0;
     }
+
     /* Check for new line. */
     if(parser->line_num <= line)
     {
         PDS_error(parser, PDS_INVALID_VALUE, "no newline at the end of statement");
-        return 0;   
+        return 0;
     }
     return 1;
 }
@@ -1911,7 +1955,7 @@ int PDS_parse(PDS_callbacks *callbacks, const char *buffer, int len, void *user_
     parser.line_num = 1;
     parser.user_data = user_data;
     parser.status = PDS_OK;
-
+    
     /* The first statement must be the PDS_VERSION_ID attribute. */
     if(!PDS_parse_statement(&parser))
     {
