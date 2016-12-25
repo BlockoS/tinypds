@@ -134,7 +134,7 @@ The `tinypds` events and associated callbacks are :
 
 * **parsing error**
   ```c
-  void error(const PDS_description *desc, void *user_data)
+  void error(const PDS_error_description *desc, void *user_data)
   ```
   * **desc** contains the description of the current error:
     * **line** pointer to the beginning of the line being parsed.
