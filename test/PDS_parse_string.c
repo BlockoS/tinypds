@@ -39,5 +39,6 @@ int main()
             check((parser.current-2) == parser.scalar.text.last);
         }
     }
+
     return EXIT_SUCCESS;
 }

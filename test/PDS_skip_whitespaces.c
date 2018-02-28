@@ -15,6 +15,7 @@ int main()
     begin_test_data(expected_t)
         test_data(                                        "nothing to skip!",  0, test_pair(1,1), PDS_OK ),
         test_data(                                          "\t    \r\n end",  8, test_pair(1,2), PDS_OK ),
+        test_data(                                               " /***/end",  6, test_pair(1,1), PDS_OK ),
         test_data(                                                "/**/ end",  5, test_pair(1,1), PDS_OK ),
         test_data(                   "/* a\tlonger\tcomment */\t\r\n\r\nend", 27, test_pair(1,3), PDS_OK ),
         test_data("  \t/*line 1 */\n \t\t/*line 2*/\n \t\t\t/*line 3*/\nend", 44, test_pair(1,4), PDS_OK ),
@@ -40,7 +41,6 @@ int main()
         parser.last     = parser.first + strlen(parser.first) - 1;
         parser.status   = PDS_OK;
         int ret;
-        
         ret = PDS_skip_whitespaces(&parser);
         check(test_status(i) == parser.status);
         check(test_end(i) == parser.current);
