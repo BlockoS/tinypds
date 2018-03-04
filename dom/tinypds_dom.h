@@ -310,8 +310,8 @@ typedef struct {
     const char *key;
     /** Key length. **/
     size_t len;
-    /** Index in the data buffer of the associated PDS scalar. **/
-    uint32_t index;
+    /** Pointer to the associated PDS item. **/
+    uintptr_t item;
 } PDS_bucket;
 
 #define PDS_HTAB_INITIAL_BUCKET_COUNT 8
@@ -329,6 +329,9 @@ typedef struct {
 } PDS_htab;
 /**
  * Compute probing distance.
+ * @param [in] tab Pointer to the hash table.
+ * @param [in] pos Position where the element is supposed to be.
+ * @return Distance from the theorical position and the actual element position. 
  */
 static int PDS_htab_distance(PDS_htab *tab, uint32_t pos) {
     if(NULL == tab->buckets[pos].key) {
@@ -397,17 +400,16 @@ static uint32_t PDS_htab_index(PDS_htab* tab, uint32_t hash, const char* key, in
  * @param [in] tab Hash table.
  * @param [in] key Entry key.
  * @param [in] len Length of the entry key.
- * @return index of the PDS item associated to the key or UINT32_MAX if the entry was not found.
+ * @return Pointer to the PDS item associated to the key or UINTPTR_MAX if the entry was not found.
  */ 
-static uint32_t PDS_htab_get(PDS_htab* tab, const char* key, size_t len)
+static uintptr_t PDS_htab_get(PDS_htab* tab, const char* key, size_t len)
 {
     uint32_t hash = PDS_hash(key, len);
     uint32_t pos = PDS_htab_index(tab, hash, key, len);
-    if(UINT32_MAX == pos)
-    {
-        return UINT32_MAX;
+    if(UINT32_MAX == pos) {
+        return UINTPTR_MAX;
     }
-    return tab->buckets[pos].index;
+    return tab->buckets[pos].item;
 }
 /**
  * Insert bucket into the hash table.
@@ -465,15 +467,15 @@ static int PDS_htab_grow(PDS_htab* tab) {
  * @param [in] tab  Hash table.
  * @param [in] key  Entry key.
  * @param [in] len  Length of the entry key.
- * @param [in] item [todo]
- * @return [todo]
+ * @param [in] item Pointer to the item to be added.
+ * @return 1 upon success, 0 if an error occured.
  */
-static int PDS_htab_add(PDS_htab* tab, const char* key, size_t len, uint32_t item) {
+static int PDS_htab_add(PDS_htab* tab, const char* key, size_t len, uintptr_t item) {
     PDS_bucket bucket;
-    bucket.key   = key;
-    bucket.len   = len;
-    bucket.hash  = PDS_hash(key, len);
-    bucket.index = item;
+    bucket.key  = key;
+    bucket.len  = len;
+    bucket.hash = PDS_hash(key, len);
+    bucket.item = item;
     
     if(tab->used == tab->capacity) {
         if(0 == PDS_htab_grow(tab)) {
@@ -486,7 +488,11 @@ static int PDS_htab_add(PDS_htab* tab, const char* key, size_t len, uint32_t ite
 }
 
 /**
- *
+ * Remove an element from the hash table.
+ * @param [in] tab  Hash table.
+ * @param [in] key  Entry key.
+ * @param [in] len  Length of the entry key.
+ * @return 1 if the entry was succesfully deleted, 0 otherwise.
  */
 static int PDS_htab_del(PDS_htab* tab, const char* key, size_t len) {
     uint32_t i;
@@ -518,7 +524,6 @@ static int PDS_htab_del(PDS_htab* tab, const char* key, size_t len) {
     return 1;
 }
 
-#if 0
 typedef struct PDS_item_impl_t {
     PDS_item info;
 
@@ -554,6 +559,11 @@ static PDS_item_impl* PDS_DOM_create(PDS_type type, const char *first, const cha
         return NULL;
     }
     
+    if(!PDS_htab_create(&item->htab)) {
+        PDS_DOM_FREE(item);
+        return NULL;
+    }
+    
     item->info.name.type  = PDS_TEXT_STRING_VALUE;
     item->info.name.first = first;
     item->info.name.last  = last;
@@ -572,7 +582,6 @@ static PDS_item_impl* PDS_DOM_create(PDS_type type, const char *first, const cha
     item->parent = NULL;
     return item;
 }
-
 /* Create a new PDS_item and add it to the hierarchy. */
 static int PDS_DOM_add(PDS_DOM_payload *payload, PDS_type type, const char *first, const char *last)
 {
@@ -582,24 +591,25 @@ static int PDS_DOM_add(PDS_DOM_payload *payload, PDS_type type, const char *firs
         return PDS_INVALID_VALUE;
     }
 
+    if(item->parent) {
+        if(!PDS_htab_add(&item->parent->htab, first, last-first, (uintptr_t)item)) {
+            return PDS_FAILURE;
+        }
+    }
     item->parent = payload->parent;
-    if( (PDS_GROUP == type) || (PDS_OBJECT == type) )
-    {
+    if( (PDS_GROUP == type) || (PDS_OBJECT == type) ) {
         payload->parent = item;
     }
-    if(payload->current)
-    {
+    if(payload->current) {
         payload->current->sibling = item;
     }
     payload->current = item;
 
-    if(NULL == payload->root)
-    {
+    if(NULL == payload->root) {
         payload->root = item;
     }
     
-    if(payload->previous)
-    {
+    if(payload->previous) {
         payload->previous->next = item;
     }
     payload->previous = item;
@@ -607,31 +617,26 @@ static int PDS_DOM_add(PDS_DOM_payload *payload, PDS_type type, const char *firs
     return PDS_OK;
 }
 /* Scalar callback */
-static int PDS_DOM_parse_scalar(const PDS_scalar *scalar, void *user_data)
-{
+static int PDS_DOM_parse_scalar(const PDS_scalar *scalar, void *user_data) {
     int index;
     int last;
     PDS_scalar *tmp;
     PDS_DOM_payload *payload = (PDS_DOM_payload*)user_data;
     /* Sanity check */
-    if(NULL == payload)
-    {
+    if(NULL == payload) {
         return 0;
     }
-    if(NULL == payload->current)
-    {
+    if(NULL == payload->current) {
         return 0;
     }
-    if((PDS_ATTRIBUTE != payload->current->info.type) && (PDS_POINTER != payload->current->info.type))
-    {
+    if((PDS_ATTRIBUTE != payload->current->info.type) && (PDS_POINTER != payload->current->info.type)) {
         return 0;
     }
     /* Copy scalar */
     index = payload->current->count-1;
     last  = payload->current->last[index];
     tmp = PDS_DOM_REALLOC(payload->current->scalar, (last+1)*sizeof(PDS_scalar));
-    if(NULL == tmp)
-    {
+    if(NULL == tmp) {
         return 0;
     }
     payload->current->scalar = tmp;
@@ -640,24 +645,19 @@ static int PDS_DOM_parse_scalar(const PDS_scalar *scalar, void *user_data)
     return 1;
 }
 /* Set start callback. */
-static int PDS_DOM_parse_set_begin(void *user_data)
-{
+static int PDS_DOM_parse_set_begin(void *user_data) {
     PDS_DOM_payload *payload = (PDS_DOM_payload*)user_data;
     /* Sanity check */
-    if(NULL == payload)
-    {
+    if(NULL == payload) {
         return 0;
     }
-    if(NULL == payload->current)
-    {
+    if(NULL == payload->current) {
         return 0;
     }
-    if((PDS_ATTRIBUTE != payload->current->info.type) && (PDS_POINTER != payload->current->info.type))
-    {
+    if((PDS_ATTRIBUTE != payload->current->info.type) && (PDS_POINTER != payload->current->info.type)) {
         return 0;
     }
-    if(payload->dimension)
-    {
+    if(payload->dimension) {
         return 0;
     }
     payload->current->scalar_type = PDS_SET;
@@ -665,136 +665,112 @@ static int PDS_DOM_parse_set_begin(void *user_data)
     return 1;
 }
 /* Set end callback. */
-static int PDS_DOM_parse_set_end(void *user_data)
-{
+static int PDS_DOM_parse_set_end(void *user_data) {
     PDS_DOM_payload *payload = (PDS_DOM_payload*)user_data;
     /* Sanity check */
-    if(NULL == payload)
-    {
+    if(NULL == payload) {
         return 0;
     }
-    if(NULL == payload->current)
-    {
+    if(NULL == payload->current) {
         return 0;
     }
     payload->dimension = 0;
     return 1;
 }
 /* Sequence start callback. */
-static int PDS_DOM_parse_sequence_begin(void *user_data)
-{
+static int PDS_DOM_parse_sequence_begin(void *user_data) {
     PDS_DOM_payload *payload = (PDS_DOM_payload*)user_data;
     /* Sanity check */
-    if(NULL == payload)
-    {
+    if(NULL == payload) {
         return 0;
     }
-    if(NULL == payload->current)
-    {
+    if(NULL == payload->current) {
         return 0;
     }
-    if((PDS_ATTRIBUTE != payload->current->info.type) && (PDS_POINTER != payload->current->info.type))
-    {
+    if((PDS_ATTRIBUTE != payload->current->info.type) && (PDS_POINTER != payload->current->info.type)) {
         return 0;
     }
     /* Check that the sequence is either 1D or 2D */
-    if(payload->dimension >= 2)
-    {
+    if(payload->dimension >= 2) {
         return 0;
     }
-    if(payload->dimension == 1)
-    {
+    if(payload->dimension == 1) {
         int *tmp;
         int index = payload->current->count;
         tmp = PDS_DOM_REALLOC(payload->current->last, (index+1)*sizeof(int));
-        if(NULL == tmp)
-        {
+        if(NULL == tmp) {
             return 0;
         }
         payload->current->last[index] = index ? payload->current->last[index-1] : 0;
         payload->current->count++;
         payload->current->scalar_type = PDS_SEQUENCE_2D;
     }
-    else if(PDS_SINGLE == payload->current->scalar_type)
-    {
+    else if(PDS_SINGLE == payload->current->scalar_type) {
         payload->current->scalar_type = PDS_SEQUENCE_1D;
     }
     payload->dimension++;
     return 1;
 }
 /* Sequence end callback. */
-static int PDS_DOM_parse_sequence_end(void *user_data)
-{
+static int PDS_DOM_parse_sequence_end(void *user_data) {
     PDS_DOM_payload *payload = (PDS_DOM_payload*)user_data;
     /* Sanity check */
-    if(NULL == payload)
-    {
+    if(NULL == payload) {
         return 0;
     }
-    if(NULL == payload->current)
-    {
+    if(NULL == payload->current) {
         return 0;
     }
     payload->dimension--;
     return 1;
 }
 /* Attribute callback */
-static int PDS_DOM_parse_attribute_begin(const char *first, const char *last, void *user_data)
-{
+static int PDS_DOM_parse_attribute_begin(const char *first, const char *last, void *user_data) {
     int ret;
     PDS_DOM_payload *payload = (PDS_DOM_payload*)user_data;
-    if(NULL == payload)
-    {
+    if(NULL == payload) {
         return 0;
     }
     ret = PDS_DOM_add(payload, PDS_ATTRIBUTE, first, last); 
-    if(PDS_OK != ret)
-    {
+    if(PDS_OK != ret) {
         return 0;
     }
     payload->current->count = 1;
     payload->current->last = PDS_DOM_MALLOC(sizeof(int));
-    if(NULL == payload->current->last)
-    {
+    if(NULL == payload->current->last) {
         return 0;
     }
     payload->current->last[0] = 0;
     payload->current->scalar_type = PDS_SINGLE;
     return 1;
 }
-static int PDS_DOM_parse_attribute_end(const char *first, const char *last, void *user_data)
-{
+static int PDS_DOM_parse_attribute_end(const char *first, const char *last, void *user_data) {
     (void)first;
     (void)last;
     (void)user_data;
     return 1;
 }
 /* Pointer callback */
-static int PDS_DOM_parse_pointer_begin(const char *first, const char *last, void *user_data)
-{
+static int PDS_DOM_parse_pointer_begin(const char *first, const char *last, void *user_data) {
     int ret;
     PDS_DOM_payload *payload = (PDS_DOM_payload*)user_data;
-    if(NULL == payload)
-    {
+    if(NULL == payload) {
         return 0;
     }
     ret = PDS_DOM_add(payload, PDS_POINTER, first, last); 
-    if(PDS_OK != ret)
-    {
+    if(PDS_OK != ret) {
         return 0;
     }
     payload->current->count = 1;
     payload->current->last = PDS_DOM_MALLOC(sizeof(int));
-    if(NULL == payload->current->last)
-    {
+    if(NULL == payload->current->last) {
         return 0;
     }
     payload->current->last[0] = 0;
     payload->current->scalar_type = PDS_SINGLE;
     return 1;
 }
-static int PDS_DOM_parse_pointer_end(const char *first, const char *last, void *user_data)
-{
+static int PDS_DOM_parse_pointer_end(const char *first, const char *last, void *user_data) {
     (void)user_data;
     (void)first;
     (void)last;
@@ -802,31 +778,26 @@ static int PDS_DOM_parse_pointer_end(const char *first, const char *last, void *
 }
 
 /* Group start callback. */
-static int PDS_DOM_parse_group_begin(const char *first, const char *last, void *user_data)
-{
+static int PDS_DOM_parse_group_begin(const char *first, const char *last, void *user_data) {
     int ret;
     PDS_DOM_payload *payload = (PDS_DOM_payload*)user_data;
-    if(NULL == payload)
-    {
+    if(NULL == payload) {
         return 0;
     }
     ret = PDS_DOM_add(payload, PDS_GROUP, first, last); 
     return (PDS_OK == ret);
 }
 /* Group end callback. */
-static int PDS_DOM_parse_group_end(const char *first, const char *last, void *user_data)
-{
+static int PDS_DOM_parse_group_end(const char *first, const char *last, void *user_data) {
     PDS_DOM_payload *payload = (PDS_DOM_payload*)user_data;
-    if(NULL == payload)
-    {
+    if(NULL == payload) {
         return 0;
     }
 
     payload->current->sibling = NULL;
     payload->current = payload->parent;
 
-    if(payload->parent)
-    {
+    if(payload->parent) {
         payload->parent->child = payload->parent->sibling;
         payload->parent->sibling = NULL;
         payload->parent = payload->parent->parent;
@@ -851,19 +822,16 @@ static int PDS_DOM_parse_object_begin(const char *first, const char *last, void 
     return (PDS_OK == ret);
 }
 /* Object end callback. */
-static int PDS_DOM_parse_object_end(const char *first, const char *last, void *user_data)
-{
+static int PDS_DOM_parse_object_end(const char *first, const char *last, void *user_data) {
     PDS_DOM_payload *payload = (PDS_DOM_payload*)user_data;
-    if(NULL == payload)
-    {
+    if(NULL == payload) {
         return 0;
     }
 
     payload->current->sibling = NULL;
     payload->current = payload->parent;
 
-    if(payload->parent)
-    {
+    if(payload->parent) {
         payload->parent->child = payload->parent->sibling;
         payload->parent->sibling = NULL;
         payload->parent = payload->parent->parent;
@@ -875,11 +843,9 @@ static int PDS_DOM_parse_object_end(const char *first, const char *last, void *u
     return 1;
 }
 /* Error callback. */
-static void PDS_DOM_error(const PDS_error_description* desc, void *user_data)
-{
+static void PDS_DOM_error(const PDS_error_description* desc, void *user_data) {
     PDS_DOM_payload *payload = (PDS_DOM_payload*)user_data;
-    if(NULL == payload)
-    {
+    if(NULL == payload) {
         return;
     }
     payload->error = *desc;
@@ -894,12 +860,10 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **item, PDS_error_des
     int ret;
     
     /* Sanity check */
-    if( NULL == error )
-    {
+    if( NULL == error ) {
         return 0;
     }
-    if( (NULL == buffer) || (0 == len) || (NULL == item) )
-    {
+    if( (NULL == buffer) || (0 == len) || (NULL == item) ) {
         error->line = 0;
         error->msg = "invalid parameters";
         return 0;
@@ -937,8 +901,7 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **item, PDS_error_des
     /* Parse buffer */
     ret = PDS_parse(&callbacks, buffer, len, &payload);
     *error = payload.error;
-    if(!ret)
-    {
+    if(!ret) {
         PDS_DOM_delete((PDS_item*)payload.root);
         return ret;
     }
@@ -948,38 +911,33 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **item, PDS_error_des
 }
 
 /* Release object resources. */
-void PDS_DOM_delete(PDS_item *pds)
-{
+void PDS_DOM_delete(PDS_item *pds) {
     PDS_item_impl *it;
     PDS_item_impl *end;
-    if(NULL == pds)
-    {
+    if(NULL == pds) {
         return;
     }
     
     it = (PDS_item_impl*)pds;
-    if(it->parent)
-    {
+    if(it->parent) {
         end = it->parent->sibling;
         it->parent->child = NULL;
         it->parent->next  = end;
     }
-    else
-    {
+    else {
         end = NULL;
     }
     
-    while(it != end)
-    {
+    while(it != end) {
         PDS_item_impl *obj = it;
         it = it->next;
         
-        if(obj->scalar)
-        {
+        PDS_htab_destroy(&obj->htab);
+        
+        if(obj->scalar) {
             PDS_DOM_FREE(obj->scalar);
         }
-        if(obj->last)
-        {
+        if(obj->last) {
             PDS_DOM_FREE(obj->last);
         }
         PDS_DOM_FREE(obj);
@@ -1027,71 +985,58 @@ static int PDS_DOM_scalar_get_internal(PDS_item *pds, PDS_scalar *scalar, PDS_sc
     return 1;
 }
 /* Gets the scalar associated to current item. */
-int PDS_DOM_scalar_get(PDS_item *pds, PDS_scalar *scalar)
-{
+int PDS_DOM_scalar_get(PDS_item *pds, PDS_scalar *scalar) {
     return PDS_DOM_scalar_get_internal(pds, scalar, PDS_SINGLE, 0, 0);
 }
 /* Gets the scalar at specified position in the set associated to the
  * current item, with bounds checking. */
-int PDS_DOM_set_get(PDS_item *pds, PDS_scalar *scalar, int i)
-{
+int PDS_DOM_set_get(PDS_item *pds, PDS_scalar *scalar, int i) {
     return PDS_DOM_scalar_get_internal(pds, scalar, PDS_SET, 0, i);
 }
 /* Gets the scalar at specified position in the 1 dimensional sequence
  * associated to the current item, with bounds checking. */
-int PDS_DOM_sequence1d_get(PDS_item *pds, PDS_scalar *scalar, int i)
-{
+int PDS_DOM_sequence1d_get(PDS_item *pds, PDS_scalar *scalar, int i) {
     return PDS_DOM_scalar_get_internal(pds, scalar, PDS_SEQUENCE_1D, 0, i);
 }
 /* Gets the scalar at specified position in the 2 dimensional sequence
  * associated to the current item, with bounds checking. */
-int PDS_DOM_sequence2d_get(PDS_item *pds, PDS_scalar *scalar, int i, int j)
-{
+int PDS_DOM_sequence2d_get(PDS_item *pds, PDS_scalar *scalar, int i, int j) {
     return PDS_DOM_scalar_get_internal(pds, scalar, PDS_SEQUENCE_2D, i, j);
 }
 /* Returns the number of rows. */
-int PDS_DOM_sequence2d_rows(PDS_item *pds)
-{
-    if(PDS_SEQUENCE_2D != PDS_DOM_scalar_typeof(pds))
-    {
+int PDS_DOM_sequence2d_rows(PDS_item *pds) {
+    if(PDS_SEQUENCE_2D != PDS_DOM_scalar_typeof(pds)) {
         return -1;
     }
     return ((PDS_item_impl*)pds)->count;
 }
 /* Returns the number of columns for the specified row. */
-int PDS_DOM_sequence2d_cols(PDS_item *pds, int i)
-{
+int PDS_DOM_sequence2d_cols(PDS_item *pds, int i) {
     PDS_item_impl *item = (PDS_item_impl*)pds;
-    if(PDS_SEQUENCE_2D != PDS_DOM_scalar_typeof(pds))
-    {
+    if(PDS_SEQUENCE_2D != PDS_DOM_scalar_typeof(pds)) {
         return -1;
     }
-    if((i >= item->count) || (0 == item->count))
-    {
+    if((i >= item->count) || (0 == item->count)) {
         return 0;
     }
     return item->last[i] - ((i > 0) ? item->last[i-1] : 0);
 }
 /* Get the sibbling of current PDS object. */
-PDS_item* PDS_DOM_sibling(PDS_item* pds)
-{
+PDS_item* PDS_DOM_sibling(PDS_item* pds) {
     PDS_item_impl *current = (PDS_item_impl*)pds;
     return (NULL != current) ? (PDS_item*)(current->sibling) : NULL;
 }
 /* Get the parent of current PDS object. */
-PDS_item* PDS_DOM_parent(PDS_item* pds)
-{
+PDS_item* PDS_DOM_parent(PDS_item* pds) {
     PDS_item_impl *current = (PDS_item_impl*)pds;
     return (NULL != current) ? (PDS_item*)(current->parent) : NULL;
 }
 /* Returns a pointer to the first item of current object. */
-PDS_item* PDS_DOM_object_begin(PDS_item* pds)
-{
+PDS_item* PDS_DOM_object_begin(PDS_item* pds) {
     return (PDS_item*)(PDS_DOM_is_object(pds) ? ((PDS_item_impl*)pds)->child : NULL);
 }
 /* Returns a pointer to one past the last item of current object. */
-PDS_item* PDS_DOM_object_end(PDS_item* pds)
-{
+PDS_item* PDS_DOM_object_end(PDS_item* pds) {
     if(PDS_DOM_is_object(pds))
     {
         PDS_item_impl* item = (PDS_item_impl*)pds;
@@ -1103,26 +1048,21 @@ PDS_item* PDS_DOM_object_end(PDS_item* pds)
     return NULL;
 }
 /* Returns a pointer to the first item of current group. */
-PDS_item* PDS_DOM_group_begin(PDS_item* pds)
-{
+PDS_item* PDS_DOM_group_begin(PDS_item* pds) {
     return (PDS_item*)(PDS_DOM_is_group(pds) ? ((PDS_item_impl*)pds)->child : NULL);
 }
 /* Returns a pointer to one past the last item of current group. */
-PDS_item* PDS_DOM_group_end(PDS_item* pds)
-{
-    if(PDS_DOM_is_group(pds))
-    {
+PDS_item* PDS_DOM_group_end(PDS_item* pds) {
+    if(PDS_DOM_is_group(pds)) {
         PDS_item_impl* item = (PDS_item_impl*)pds;
-        if(NULL != item->child)
-        {
+        if(NULL != item->child) {
             return (PDS_item*)item->sibling;
         }
     }
     return NULL;
 }
 /* Finds the first item which name matches. */
-PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type search, int check_current)
-{
+PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type search, int check_current) {
     const char *first;
     const char *last;
     PDS_item_impl *begin = (PDS_item_impl*)current;
@@ -1130,33 +1070,30 @@ PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type sear
     PDS_item_impl *end;
 
     /* sanity check */
-    if((NULL == name) || (NULL == current))
-    {
+    if((NULL == name) || (NULL == current)) {
         return NULL;
     }
     
     first = name;
     last  = name + strlen(name) - 1;
 
-    if(check_current && PDS_string_compare(current->name.first, current->name.last, first, last))
-    {
+    if(check_current && PDS_string_compare(current->name.first, current->name.last, first, last)) {
         return current;
     }
-    switch(search)
-    {
-        case PDS_ONLY_SIBLINGS:
+    switch(search) {
+        case PDS_ONLY_SIBLINGS: // [todo] use parent htab
             for(it=begin->sibling, end=NULL; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->sibling)
             {}
             break;
-        case PDS_ONLY_CHILDREN:
+        case PDS_ONLY_CHILDREN: // [todo] use htab
             for(it=begin->child, end=NULL; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->sibling)
             {}
             break;
-        case PDS_CHILDREN_RECURSIVE:
+        case PDS_CHILDREN_RECURSIVE:  // [todo] use htab
             for(it=begin->child, end=begin->sibling; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->next)
             {}
             break;
-        case PDS_SIBLINGS_RECURSIVE:
+        case PDS_SIBLINGS_RECURSIVE: // [todo] use htab
             end = (begin->parent) ? (begin->parent->sibling) : NULL;
             for(it=begin->next; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->next)
             {}
@@ -1165,5 +1102,4 @@ PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type sear
 
     return (PDS_item*)((it != end) ? it : NULL);
 }
-#endif
 #endif /* TINY_PDS_DOM_IMPL */

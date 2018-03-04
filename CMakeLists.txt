@@ -45,10 +45,10 @@ target_link_libraries(PDS_string_tests munit)
 add_executable(PDS_parse_tests test/PDS_parse_tests.c)
 target_link_libraries(PDS_parse_tests munit)
 
-add_executable(PDS_parse test/PDS_parse.c)
+add_executable(PDS_parse test/PDS_parse.c test/utils.c)
 
-#add_executable(PDS_DOM_parse test/PDS_DOM_parse.c ${TINY_PDS_TEST_SOURCE_FILES})
-#target_link_libraries(PDS_DOM_parse tinypds)
+add_executable(PDS_DOM_parse test/PDS_DOM_parse.c test/utils.c)
+target_link_libraries(PDS_DOM_parse tinypds)
 
 #add_executable(PDS_DOM_find test/PDS_DOM_find.c ${TINY_PDS_TEST_SOURCE_FILES})
 #target_link_libraries(PDS_DOM_find tinypds tinypds_dom)
@@ -64,7 +64,7 @@ add_test(PDS_parse_W20140403T020157750ID20F12.IMG PDS_parse ${CMAKE_CURRENT_SOUR
 add_test(PDS_parse_AMI_LR3_R00976_00031_00040.IMG PDS_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/AMI_LR3_R00976_00031_00040.IMG)
 
 add_test(PDS_DOM_htab PDS_DOM_htab)
-#add_test(PDS_DOM_parse_W20140403T020157750ID20F12.IMG PDS_DOM_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/W20140403T020157750ID20F12.IMG)
-#add_test(PDS_DOM_parse_0844636876_lvl1_0.lbl PDS_DOM_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/0844636876_lvl1_0.lbl)
-#add_test(PDS_DOM_parse_hayabusa_20050907_20050908_v01.lbl PDS_DOM_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/hayabusa_20050907_20050908_v01.lbl)
+add_test(PDS_DOM_parse_W20140403T020157750ID20F12.IMG PDS_DOM_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/W20140403T020157750ID20F12.IMG)
+add_test(PDS_DOM_parse_0844636876_lvl1_0.lbl PDS_DOM_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/0844636876_lvl1_0.lbl)
+add_test(PDS_DOM_parse_hayabusa_20050907_20050908_v01.lbl PDS_DOM_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/hayabusa_20050907_20050908_v01.lbl)
 #add_test(PDS_DOM_find PDS_DOM_find)

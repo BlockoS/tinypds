@@ -1,23 +1,13 @@
 #include <errno.h>
-#include <tinypds.h>
-#include <tinypds_dom.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "test.h"
 #include "utils.h"
 
 #include <tinypds.h>
 
 #define TINY_PDS_DOM_IMPL
-#include <tinypds_dom.h>
-
-void tabs(int depth)
-{
-    int i;
-    for(i=0; i<depth; i++)
-    {
-        printf("\t");
-    }
-}
+#include <dom/tinypds_dom.h>
 
 void print_DOM_scalar(PDS_item *item, int depth)
 {
@@ -39,7 +29,7 @@ void print_DOM_scalar(PDS_item *item, int depth)
                 int count = PDS_DOM_scalar_count(item);
                 for(i=0; i<count; i++)
                 {
-                    tabs(depth+1);
+                    print_tab(depth+1);
                     if(PDS_DOM_set_get(item, &scalar, i))
                     {
                         print_scalar(&scalar);
@@ -53,7 +43,7 @@ void print_DOM_scalar(PDS_item *item, int depth)
                 int count = PDS_DOM_scalar_count(item);
                 for(i=0; i<count; i++)
                 {
-                    tabs(depth+1);
+                    print_tab(depth+1);
                     if(PDS_DOM_sequence1d_get(item, &scalar, i))
                     {
                         print_scalar(&scalar);
@@ -69,7 +59,7 @@ void print_DOM_scalar(PDS_item *item, int depth)
                     int cols = PDS_DOM_sequence2d_cols(item, i);
                     for(j=0; j<cols; j++)
                     {
-                        tabs(depth+1);
+                        print_tab(depth+1);
                         if(PDS_DOM_sequence2d_get(item, &scalar, i, j))
                         {
                             print_scalar(&scalar);
@@ -86,7 +76,7 @@ void print(PDS_item *item, int depth)
 {
     for( ; NULL != item; item=PDS_DOM_sibling(item))
     {
-        tabs(depth);
+        print_tab(depth);
         switch(item->type)
         {
             case PDS_ATTRIBUTE:

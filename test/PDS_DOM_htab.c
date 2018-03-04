@@ -79,7 +79,7 @@ MunitResult htab_add_test(const MunitParameter params[], void* fixture) {
     }
     for(i=0, count=0; i<tab->capacity; i++) {
         if(tab->buckets[i].key) {
-            munit_assert_string_equal(tab->buckets[i].key, keys[tab->buckets[i].index]);
+            munit_assert_string_equal(tab->buckets[i].key, keys[tab->buckets[i].item]);
             count++;
         }
     }
@@ -88,7 +88,7 @@ MunitResult htab_add_test(const MunitParameter params[], void* fixture) {
 }
 
 MunitResult htab_del_test(const MunitParameter params[], void* fixture) {
-    uint32_t items[31];
+    uintptr_t items[31];
     uint32_t index;
     uint32_t i, j;
     int ret;
@@ -135,13 +135,13 @@ MunitResult htab_del_test(const MunitParameter params[], void* fixture) {
 }
 
 static MunitTest htab_tests[] = {
-    { "htab add", htab_add_test, htab_setup, htab_tear_down, MUNIT_TEST_OPTION_NONE, NULL },
-    { "htab del", htab_del_test, htab_setup, htab_tear_down, MUNIT_TEST_OPTION_NONE, NULL },
+    { "add", htab_add_test, htab_setup, htab_tear_down, MUNIT_TEST_OPTION_NONE, NULL },
+    { "del", htab_del_test, htab_setup, htab_tear_down, MUNIT_TEST_OPTION_NONE, NULL },
     { NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }
 };
 
 static const MunitSuite htab_suite = {
-    "htab test suite", htab_tests, NULL, 1, MUNIT_SUITE_OPTION_NONE
+    "hash table test suite", htab_tests, NULL, 1, MUNIT_SUITE_OPTION_NONE
 };
 
 int main (int argc, char* const* argv) {
