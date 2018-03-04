@@ -6,20 +6,19 @@
  *     #define TINY_PDS_DOM_IMPL
  *
  * Licensed under the MIT License
- * (c) 2016 Vincent Cruz
+ * (c) 2016-2018 Vincent Cruz
  */
 #ifndef TINY_PDS_DOM_H
 #define TINY_PDS_DOM_H
 
-#include "tinypds.h"
+#include <tinypds.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /** PDS item type **/
-typedef enum
-{
+typedef enum {
     /** 
      * PDS attribute. 
      * An attribute can contain a scalar, a set, a one dimensional or
@@ -45,8 +44,7 @@ typedef enum
 } PDS_type;
 
 /** PDS scalar type **/
-typedef enum
-{
+typedef enum {
     /** 
      * No scalar is associated to current item. This is generally the 
      * case for objects and groups.
@@ -63,8 +61,7 @@ typedef enum
 } PDS_scalar_type;
 
 /** PDS item **/
-typedef struct
-{
+typedef struct {
     /** Name **/
     PDS_string name;
     /** Item type. **/
@@ -223,8 +220,7 @@ void PDS_DOM_delete(PDS_item *pds);
 /**
  * Defines the way the PDS tree is traversed.
  */
-typedef enum
-{
+typedef enum {
     /** Only the siblings of the current item are checked. **/
     PDS_ONLY_SIBLINGS = 0,
     /** Only the children of the current item are checked. 
@@ -269,14 +265,264 @@ PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type sear
 #define PDS_DOM_FREE(p)            free(p)
 #endif
 
+#if defined(PDS_DOM_MEMCPY) && defined(PDS_DOM_MEMSET)
+// ok
+#elif !defined(PDS_DOM_MEMCPY) && !defined(PDS_DOM_MEMSET)
+// ok
+#else
+#error "Must define all or none of PDS_DOM_MEMCPY and PDS_DOM_MEMSET"
+#endif
+
 #if !defined(PDS_DOM_MEMCPY)
 #include <string.h>
 #define PDS_DOM_MEMCPY(dst, src, sz) memcpy(dst, src, sz)
+#define PDS_DOM_MEMSET(dst, c, sz) memset(dst,c, sz)
 #endif
 
-typedef struct PDS_item_impl_t
+/**
+ * ELF hash.
+ * @param [in] key  Input string.
+ * @param [in] len  Length of the input string.
+ * @return 32 bits hash of the input key.
+ */
+static uint32_t PDS_hash(const char* key, size_t len) {
+    const uint8_t *in = (const uint8_t*)key;
+    
+    size_t  i;
+    uint32_t h;
+    
+    for(i=0, h=0; i<len; i++) {
+        uint32_t g;
+        h = (h << 4) + in[i];
+        g = h & 0xf0000000;
+        if(g) {
+            h ^= g >> 24;
+        }
+        h &= ~g;
+    }
+    return h;
+}
+/** Hash table bucket. **/
+typedef struct {
+    /** Hash of the key. **/
+    uint32_t hash;
+    /** Key. **/
+    const char *key;
+    /** Key length. **/
+    size_t len;
+    /** Index in the data buffer of the associated PDS scalar. **/
+    uint32_t index;
+} PDS_bucket;
+
+#define PDS_HTAB_INITIAL_BUCKET_COUNT 8
+
+/**
+ * Opaque hash table structure.
+ */
+typedef struct {
+    /** Hash table buckets. **/
+    PDS_bucket *buckets;
+    /** Capacity (number of allocated entries). **/
+    uint32_t capacity;
+    /** Number of used entries. **/ 
+    uint32_t used;
+} PDS_htab;
+/**
+ * Compute probing distance.
+ */
+static int PDS_htab_distance(PDS_htab *tab, uint32_t pos) {
+    if(NULL == tab->buckets[pos].key) {
+        return -1;
+    }
+    uint32_t original = tab->buckets[pos].hash % tab->capacity;
+    return (tab->capacity + pos - original) % tab->capacity;
+}
+/**
+ * Creates an empty hash table.
+ * @param [in][out] tab Pointer to the hash table to be destroyed.
+ * @return 1 upon success, 0 if an error occured.
+ */
+static int PDS_htab_create(PDS_htab* tab) {
+    if(NULL == tab) {
+        return 0;
+    }
+    tab->capacity = PDS_HTAB_INITIAL_BUCKET_COUNT;
+    tab->used = 0;
+    tab->buckets = (PDS_bucket*)PDS_DOM_MALLOC(tab->capacity * sizeof(PDS_bucket));
+    if(NULL == tab->buckets) {
+        return 0;
+    }
+    PDS_DOM_MEMSET(tab->buckets, 0, tab->capacity * sizeof(PDS_bucket));
+    return 1; 
+}
+/**
+ * Releases memory used by a hash table.
+ * @param [in] tab Pointer to the hash table to be destroyed.
+ */
+static void PDS_htab_destroy(PDS_htab* tab) {
+    if(NULL == tab) {
+        return;
+    }
+    if(tab->buckets) {
+        PDS_DOM_FREE(tab->buckets);
+        tab->buckets = NULL;
+    }
+    tab->capacity = 0;
+    tab->used = 0;
+}
+/**
+ * Retrieves the index of the bucket associated to a given key.
+ * @param [in] tab Hash table.
+ * @param [in] hash Entry hash.
+ * @param [in] key Entry key.
+ * @param [in] len Length of the entry key.
+ * @return index of the matching bucket or UINT32_MAX if there is no matching entry.
+ */
+static uint32_t PDS_htab_index(PDS_htab* tab, uint32_t hash, const char* key, int len) {
+    uint32_t i;
+    for(i=0; i<tab->capacity; i++) {
+        uint32_t pos = (hash + i) % tab->capacity;
+        int distance = PDS_htab_distance(tab, pos);
+        if((NULL == tab->buckets[pos].key) || ((int)i > distance)) {
+            return UINT32_MAX;
+        }
+        else if(PDS_string_compare(key, key+len, tab->buckets[pos].key, tab->buckets[pos].key+tab->buckets[pos].len)) {
+            return pos;
+        }
+    }
+    return UINT32_MAX;
+}
+/**
+ * Retrieves the index of the PDS item associated to a given key.
+ * @param [in] tab Hash table.
+ * @param [in] key Entry key.
+ * @param [in] len Length of the entry key.
+ * @return index of the PDS item associated to the key or UINT32_MAX if the entry was not found.
+ */ 
+static uint32_t PDS_htab_get(PDS_htab* tab, const char* key, size_t len)
 {
+    uint32_t hash = PDS_hash(key, len);
+    uint32_t pos = PDS_htab_index(tab, hash, key, len);
+    if(UINT32_MAX == pos)
+    {
+        return UINT32_MAX;
+    }
+    return tab->buckets[pos].index;
+}
+/**
+ * Insert bucket into the hash table.
+ */
+static void PDS_htab_insert(PDS_htab* tab, PDS_bucket* bucket) {
+    int probe = 0;
+    uint32_t i;
+    
+    uint32_t pos = bucket->hash % tab->capacity;
+    for(i=0; i<tab->capacity; i++, probe++, pos=(pos+1)%tab->capacity) {
+        if(tab->buckets[pos].key) {
+            int distance = PDS_htab_distance(tab, pos);
+            if(probe > distance) {
+                PDS_bucket tmp = tab->buckets[pos];
+                tab->buckets[pos] = *bucket;
+                *bucket = tmp;
+                probe = distance;
+            }
+        }
+        else {
+            tab->buckets[pos] = *bucket;
+            break;
+        }
+    }
+}
+/**
+ * Expand hash table.
+ */
+static int PDS_htab_grow(PDS_htab* tab) {
+    PDS_bucket* buckets;
+    uint32_t capacity;
+    
+    uint32_t old_capacity = tab->capacity;
+    PDS_bucket* old_buckets = tab->buckets;
+
+    capacity = tab->capacity * 2;
+    buckets = (PDS_bucket*)PDS_DOM_MALLOC(capacity * sizeof(PDS_bucket));
+    if(NULL == buckets) {
+        return 0;
+    }
+    PDS_DOM_MEMSET(buckets, 0, capacity * sizeof(PDS_bucket));
+
+    tab->capacity = capacity;
+    tab->buckets = buckets;
+    for(uint32_t i=0; i<old_capacity; i++) {
+        if(old_buckets[i].key) {
+            PDS_htab_insert(tab, &old_buckets[i]);
+        }
+    }
+    free(old_buckets);
+    return 1;
+}
+/**
+ * Adds a new entry to the hash table.
+ * @param [in] tab  Hash table.
+ * @param [in] key  Entry key.
+ * @param [in] len  Length of the entry key.
+ * @param [in] item [todo]
+ * @return [todo]
+ */
+static int PDS_htab_add(PDS_htab* tab, const char* key, size_t len, uint32_t item) {
+    PDS_bucket bucket;
+    bucket.key   = key;
+    bucket.len   = len;
+    bucket.hash  = PDS_hash(key, len);
+    bucket.index = item;
+    
+    if(tab->used == tab->capacity) {
+        if(0 == PDS_htab_grow(tab)) {
+            return 0;
+        }
+    }
+    tab->used++;
+    PDS_htab_insert(tab, &bucket);
+    return 1;
+}
+
+/**
+ *
+ */
+static int PDS_htab_del(PDS_htab* tab, const char* key, size_t len) {
+    uint32_t i;
+    uint32_t hash = PDS_hash(key, len);
+    uint32_t pos = PDS_htab_index(tab, hash, key, len);
+    if(UINT32_MAX == pos) {
+        return 0;
+    }
+
+    PDS_DOM_MEMSET(&tab->buckets[pos], 0, sizeof(PDS_bucket));
+    
+    tab->used--;
+    for(i=0; i<tab->capacity; i++) {
+        uint32_t prev = pos;
+        pos = (pos+1) % tab->capacity;
+        if(NULL == tab->buckets[pos].key) {
+            break;
+        }
+        int distance = PDS_htab_distance(tab, pos);
+        if(0 == distance) {
+            break;
+        }
+        PDS_DOM_MEMCPY(&tab->buckets[prev], &tab->buckets[pos], sizeof(PDS_bucket));
+        PDS_DOM_MEMSET(&tab->buckets[pos], 0, sizeof(PDS_bucket));
+    }
+    
+    pos = PDS_htab_index(tab, hash, key, len);
+
+    return 1;
+}
+
+#if 0
+typedef struct PDS_item_impl_t {
     PDS_item info;
+
+    PDS_htab htab;
 
     PDS_scalar_type scalar_type;
     PDS_scalar *scalar;
@@ -291,8 +537,7 @@ typedef struct PDS_item_impl_t
     struct PDS_item_impl_t *next;
 } PDS_item_impl;
 
-typedef struct
-{
+typedef struct {
     PDS_item_impl *root;
     PDS_item_impl *parent;
     PDS_item_impl *current;
@@ -302,12 +547,10 @@ typedef struct
 } PDS_DOM_payload;
 
 /* Create new PDS item */
-static PDS_item_impl* PDS_DOM_create(PDS_type type, const char *first, const char *last)
-{
+static PDS_item_impl* PDS_DOM_create(PDS_type type, const char *first, const char *last) {
     PDS_item_impl *item;
     item = PDS_DOM_MALLOC(sizeof(PDS_item_impl));
-    if(NULL == item)
-    {
+    if(NULL == item) {
         return NULL;
     }
     
@@ -922,5 +1165,5 @@ PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type sear
 
     return (PDS_item*)((it != end) ? it : NULL);
 }
-
+#endif
 #endif /* TINY_PDS_DOM_IMPL */
