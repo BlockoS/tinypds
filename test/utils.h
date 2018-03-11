@@ -3,6 +3,7 @@
 
 #include <tinypds.h>
 
+void print_tab(int depth);
 void print_string(const char *first, const char *last);
 void print_scalar(const PDS_scalar *scalar);
 
