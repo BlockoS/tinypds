@@ -218,6 +218,11 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **pds, PDS_error_desc
  */
 void PDS_DOM_delete(PDS_item *pds);
 /**
+ * Recursively delete PDS tree. 
+ * @param [in] pds PDS item.
+ */
+void PDS_DOM_destroy(PDS_item *pds);
+/**
  * Defines the way the PDS tree is traversed.
  */
 typedef enum {
@@ -886,7 +891,8 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **item, PDS_error_des
     
     payload.root = NULL;
     payload.parent = PDS_DOM_create(PDS_OBJECT, NULL, NULL);
-    payload.current = payload.previous = NULL;
+    payload.current = NULL;
+    payload.previous = payload.parent;
     
     payload.dimension = 0;
     
@@ -902,7 +908,7 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **item, PDS_error_des
     ret = PDS_parse(&callbacks, buffer, len, &payload);
     *error = payload.error;
     if(!ret) {
-        PDS_DOM_delete((PDS_item*)payload.root);
+        PDS_DOM_destroy((PDS_item*)payload.root);
         return ret;
     }
     
@@ -932,8 +938,7 @@ void PDS_DOM_delete(PDS_item *pds) {
         PDS_item_impl *obj = it;
         it = it->next;
         
-        PDS_htab_destroy(&obj->htab);
-        
+        PDS_htab_destroy(&obj->htab);   
         if(obj->scalar) {
             PDS_DOM_FREE(obj->scalar);
         }
@@ -943,6 +948,34 @@ void PDS_DOM_delete(PDS_item *pds) {
         PDS_DOM_FREE(obj);
     }
 }
+
+/* Recursively delete PDS tree. */
+void PDS_DOM_destroy(PDS_item *pds) {
+    PDS_item_impl *it;
+    if(NULL == pds) {
+        return;
+    }
+    
+    it = (PDS_item_impl*)pds;
+    while(it->parent) {
+        it = it->parent;
+    }
+    
+    while(it) {
+        PDS_item_impl *obj = it;
+        it = it->next;
+        
+        PDS_htab_destroy(&obj->htab);        
+        if(obj->scalar) {
+            PDS_DOM_FREE(obj->scalar);
+        }
+        if(obj->last) {
+            PDS_DOM_FREE(obj->last);
+        }
+        PDS_DOM_FREE(obj);
+    }
+}
+
 /* Get the type of the scalar attribute of current item. */
 PDS_scalar_type PDS_DOM_scalar_typeof(PDS_item *pds)
 {

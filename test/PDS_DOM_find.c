@@ -53,7 +53,7 @@ static void pds_dom_tear_down(void* fixture) {
 	}
 	PDS_item **item = (PDS_item**)fixture;
 	if(*item) {
-		PDS_DOM_delete(*item);
+        PDS_DOM_destroy(*item);
 	}
 	free(item);
 }
