@@ -14,7 +14,7 @@
 
 #define TINY_PDS_IMPL
 #define TINY_PDS_DOM_IMPL
-#include <dom/tinypds_dom.h>
+#include <tinypds_dom.h>
 
 #include "utils.h"
 
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
             }
         }
     }
-    PDS_DOM_destroy(root);
+    PDS_DOM_delete(root);
     free(buffer);
     return ret ? EXIT_SUCCESS : EXIT_FAILURE;
 }

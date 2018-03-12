@@ -1,7 +1,7 @@
 #include <munit.h>
 
 #include <tinypds.h>
-#include <dom/tinypds_dom.h>
+#include <tinypds_dom.h>
 
 static const char *pds_string = 
 "PDS_VERSION_ID = PDS3\r\n"
@@ -53,7 +53,7 @@ static void pds_dom_tear_down(void* fixture) {
 	}
 	PDS_item **item = (PDS_item**)fixture;
 	if(*item) {
-        PDS_DOM_destroy(*item);
+        PDS_DOM_delete(*item);
 	}
 	free(item);
 }

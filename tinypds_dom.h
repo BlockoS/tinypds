@@ -218,11 +218,6 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **pds, PDS_error_desc
  */
 void PDS_DOM_delete(PDS_item *pds);
 /**
- * Recursively delete PDS tree. 
- * @param [in] pds PDS item.
- */
-void PDS_DOM_destroy(PDS_item *pds);
-/**
  * Defines the way the PDS tree is traversed.
  */
 typedef enum {
@@ -284,254 +279,8 @@ PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type sear
 #define PDS_DOM_MEMSET(dst, c, sz) memset(dst,c, sz)
 #endif
 
-/**
- * ELF hash.
- * @param [in] key  Input string.
- * @param [in] len  Length of the input string.
- * @return 32 bits hash of the input key.
- */
-static uint32_t PDS_hash(const char* key, size_t len) {
-    const uint8_t *in = (const uint8_t*)key;
-    
-    size_t  i;
-    uint32_t h;
-    
-    for(i=0, h=0; i<len; i++) {
-        uint32_t g;
-        h = (h << 4) + in[i];
-        g = h & 0xf0000000;
-        if(g) {
-            h ^= g >> 24;
-        }
-        h &= ~g;
-    }
-    return h;
-}
-/** Hash table bucket. **/
-typedef struct {
-    /** Hash of the key. **/
-    uint32_t hash;
-    /** Key. **/
-    const char *key;
-    /** Key length. **/
-    size_t len;
-    /** Pointer to the associated PDS item. **/
-    uintptr_t item;
-} PDS_bucket;
-
-#define PDS_HTAB_INITIAL_BUCKET_COUNT 8
-
-/**
- * Opaque hash table structure.
- */
-typedef struct {
-    /** Hash table buckets. **/
-    PDS_bucket *buckets;
-    /** Capacity (number of allocated entries). **/
-    uint32_t capacity;
-    /** Number of used entries. **/ 
-    uint32_t used;
-} PDS_htab;
-/**
- * Compute probing distance.
- * @param [in] tab Pointer to the hash table.
- * @param [in] pos Position where the element is supposed to be.
- * @return Distance from the theorical position and the actual element position. 
- */
-static int PDS_htab_distance(PDS_htab *tab, uint32_t pos) {
-    if(NULL == tab->buckets[pos].key) {
-        return -1;
-    }
-    uint32_t original = tab->buckets[pos].hash % tab->capacity;
-    return (tab->capacity + pos - original) % tab->capacity;
-}
-/**
- * Creates an empty hash table.
- * @param [in][out] tab Pointer to the hash table to be destroyed.
- * @return 1 upon success, 0 if an error occured.
- */
-static int PDS_htab_create(PDS_htab* tab) {
-    if(NULL == tab) {
-        return 0;
-    }
-    tab->capacity = PDS_HTAB_INITIAL_BUCKET_COUNT;
-    tab->used = 0;
-    tab->buckets = (PDS_bucket*)PDS_DOM_MALLOC(tab->capacity * sizeof(PDS_bucket));
-    if(NULL == tab->buckets) {
-        return 0;
-    }
-    PDS_DOM_MEMSET(tab->buckets, 0, tab->capacity * sizeof(PDS_bucket));
-    return 1; 
-}
-/**
- * Releases memory used by a hash table.
- * @param [in] tab Pointer to the hash table to be destroyed.
- */
-static void PDS_htab_destroy(PDS_htab* tab) {
-    if(NULL == tab) {
-        return;
-    }
-    if(tab->buckets) {
-        PDS_DOM_FREE(tab->buckets);
-        tab->buckets = NULL;
-    }
-    tab->capacity = 0;
-    tab->used = 0;
-}
-/**
- * Retrieves the index of the bucket associated to a given key.
- * @param [in] tab Hash table.
- * @param [in] hash Entry hash.
- * @param [in] key Entry key.
- * @param [in] len Length of the entry key.
- * @return index of the matching bucket or UINT32_MAX if there is no matching entry.
- */
-static uint32_t PDS_htab_index(PDS_htab* tab, uint32_t hash, const char* key, int len) {
-    uint32_t i;
-    for(i=0; i<tab->capacity; i++) {
-        uint32_t pos = (hash + i) % tab->capacity;
-        int distance = PDS_htab_distance(tab, pos);
-        if((NULL == tab->buckets[pos].key) || ((int)i > distance)) {
-            return UINT32_MAX;
-        }
-        else if(PDS_string_compare(key, key+len, tab->buckets[pos].key, tab->buckets[pos].key+tab->buckets[pos].len)) {
-            return pos;
-        }
-    }
-    return UINT32_MAX;
-}
-/**
- * Retrieves the index of the PDS item associated to a given key.
- * @param [in] tab Hash table.
- * @param [in] key Entry key.
- * @param [in] len Length of the entry key.
- * @return Pointer to the PDS item associated to the key or UINTPTR_MAX if the entry was not found.
- */ 
-static uintptr_t PDS_htab_get(PDS_htab* tab, const char* key, size_t len)
-{
-    uint32_t hash = PDS_hash(key, len);
-    uint32_t pos = PDS_htab_index(tab, hash, key, len);
-    if(UINT32_MAX == pos) {
-        return UINTPTR_MAX;
-    }
-    return tab->buckets[pos].item;
-}
-/**
- * Insert bucket into the hash table.
- */
-static void PDS_htab_insert(PDS_htab* tab, PDS_bucket* bucket) {
-    int probe = 0;
-    uint32_t i;
-    
-    uint32_t pos = bucket->hash % tab->capacity;
-    for(i=0; i<tab->capacity; i++, probe++, pos=(pos+1)%tab->capacity) {
-        if(tab->buckets[pos].key) {
-            int distance = PDS_htab_distance(tab, pos);
-            if(probe > distance) {
-                PDS_bucket tmp = tab->buckets[pos];
-                tab->buckets[pos] = *bucket;
-                *bucket = tmp;
-                probe = distance;
-            }
-        }
-        else {
-            tab->buckets[pos] = *bucket;
-            break;
-        }
-    }
-}
-/**
- * Expand hash table.
- */
-static int PDS_htab_grow(PDS_htab* tab) {
-    PDS_bucket* buckets;
-    uint32_t capacity;
-    
-    uint32_t old_capacity = tab->capacity;
-    PDS_bucket* old_buckets = tab->buckets;
-
-    capacity = tab->capacity * 2;
-    buckets = (PDS_bucket*)PDS_DOM_MALLOC(capacity * sizeof(PDS_bucket));
-    if(NULL == buckets) {
-        return 0;
-    }
-    PDS_DOM_MEMSET(buckets, 0, capacity * sizeof(PDS_bucket));
-
-    tab->capacity = capacity;
-    tab->buckets = buckets;
-    for(uint32_t i=0; i<old_capacity; i++) {
-        if(old_buckets[i].key) {
-            PDS_htab_insert(tab, &old_buckets[i]);
-        }
-    }
-    free(old_buckets);
-    return 1;
-}
-/**
- * Adds a new entry to the hash table.
- * @param [in] tab  Hash table.
- * @param [in] key  Entry key.
- * @param [in] len  Length of the entry key.
- * @param [in] item Pointer to the item to be added.
- * @return 1 upon success, 0 if an error occured.
- */
-static int PDS_htab_add(PDS_htab* tab, const char* key, size_t len, uintptr_t item) {
-    PDS_bucket bucket;
-    bucket.key  = key;
-    bucket.len  = len;
-    bucket.hash = PDS_hash(key, len);
-    bucket.item = item;
-    
-    if(tab->used == tab->capacity) {
-        if(0 == PDS_htab_grow(tab)) {
-            return 0;
-        }
-    }
-    tab->used++;
-    PDS_htab_insert(tab, &bucket);
-    return 1;
-}
-/**
- * Remove an element from the hash table.
- * @param [in] tab  Hash table.
- * @param [in] key  Entry key.
- * @param [in] len  Length of the entry key.
- * @return 1 if the entry was succesfully deleted, 0 otherwise.
- */
-static int PDS_htab_del(PDS_htab* tab, const char* key, size_t len) {
-    uint32_t i;
-    uint32_t hash = PDS_hash(key, len);
-    uint32_t pos = PDS_htab_index(tab, hash, key, len);
-    if(UINT32_MAX == pos) {
-        return 0;
-    }
-
-    PDS_DOM_MEMSET(&tab->buckets[pos], 0, sizeof(PDS_bucket));
-    
-    tab->used--;
-    for(i=0; i<tab->capacity; i++) {
-        uint32_t prev = pos;
-        pos = (pos+1) % tab->capacity;
-        if(NULL == tab->buckets[pos].key) {
-            break;
-        }
-        int distance = PDS_htab_distance(tab, pos);
-        if(0 == distance) {
-            break;
-        }
-        PDS_DOM_MEMCPY(&tab->buckets[prev], &tab->buckets[pos], sizeof(PDS_bucket));
-        PDS_DOM_MEMSET(&tab->buckets[pos], 0, sizeof(PDS_bucket));
-    }
-    
-    pos = PDS_htab_index(tab, hash, key, len);
-
-    return 1;
-}
-
 typedef struct PDS_item_impl_t {
     PDS_item info;
-
-    PDS_htab htab;
 
     PDS_scalar_type scalar_type;
     PDS_scalar *scalar;
@@ -563,11 +312,6 @@ static PDS_item_impl* PDS_DOM_create(PDS_type type, const char *first, const cha
         return NULL;
     }
     
-    if(!PDS_htab_create(&item->htab)) {
-        PDS_DOM_FREE(item);
-        return NULL;
-    }
-    
     item->info.name.type  = PDS_TEXT_STRING_VALUE;
     item->info.name.first = first;
     item->info.name.last  = last;
@@ -596,11 +340,6 @@ static int PDS_DOM_add(PDS_DOM_payload *payload, PDS_type type, const char *firs
     }
 
     item->parent = payload->parent;
-    if(item->parent) {
-        if(!PDS_htab_add(&item->parent->htab, first, last-first, (uintptr_t)item)) {
-            return PDS_FAILURE;
-        }
-    }
     if( (PDS_GROUP == type) || (PDS_OBJECT == type) ) {
         payload->parent = item;
     }
@@ -908,7 +647,7 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **item, PDS_error_des
     ret = PDS_parse(&callbacks, buffer, len, &payload);
     *error = payload.error;
     if(!ret) {
-        PDS_DOM_destroy((PDS_item*)payload.root);
+        PDS_DOM_delete((PDS_item*)payload.root);
         return ret;
     }
     
@@ -936,36 +675,7 @@ void PDS_DOM_delete(PDS_item *pds) {
     
     while(it != end) {
         PDS_item_impl *obj = it;
-        it = it->next;
-        
-        PDS_htab_destroy(&obj->htab);   
-        if(obj->scalar) {
-            PDS_DOM_FREE(obj->scalar);
-        }
-        if(obj->last) {
-            PDS_DOM_FREE(obj->last);
-        }
-        PDS_DOM_FREE(obj);
-    }
-}
-
-/* Recursively delete PDS tree. */
-void PDS_DOM_destroy(PDS_item *pds) {
-    PDS_item_impl *it;
-    if(NULL == pds) {
-        return;
-    }
-    
-    it = (PDS_item_impl*)pds;
-    while(it->parent) {
-        it = it->parent;
-    }
-    
-    while(it) {
-        PDS_item_impl *obj = it;
-        it = it->next;
-        
-        PDS_htab_destroy(&obj->htab);        
+        it = it->next;        
         if(obj->scalar) {
             PDS_DOM_FREE(obj->scalar);
         }
@@ -1101,7 +811,6 @@ PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type sear
     PDS_item_impl *begin = (PDS_item_impl*)current;
     PDS_item_impl *it;
     PDS_item_impl *end;
-    uintptr_t ptr;
     
     /* sanity check */
     if((NULL == name) || (NULL == current)) {
@@ -1116,18 +825,18 @@ PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type sear
     }
     switch(search) {
         case PDS_ONLY_SIBLINGS:
-            ptr = PDS_htab_get(&begin->parent->htab, first, last-first);
-            it = (ptr != UINTPTR_MAX) ? (PDS_item_impl*)ptr : NULL;
+            for(it=begin->sibling, end=NULL; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->sibling)
+            {}
             break;
         case PDS_ONLY_CHILDREN:
-            ptr = PDS_htab_get(&begin->htab, first, last-first);
-            it = (ptr != UINTPTR_MAX) ? (PDS_item_impl*)ptr : NULL;
+            for(it=begin->child, end=NULL; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->sibling)
+            {}
             break;
-        case PDS_CHILDREN_RECURSIVE:  // [todo] use htab
+        case PDS_CHILDREN_RECURSIVE:
             for(it=begin->child, end=begin->sibling; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->next)
             {}
             break;
-        case PDS_SIBLINGS_RECURSIVE: // [todo] use htab
+        case PDS_SIBLINGS_RECURSIVE:
             end = (begin->parent) ? (begin->parent->sibling) : NULL;
             for(it=begin->next; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->next)
             {}

@@ -14,7 +14,7 @@ set(PROJECT_NAME tinypds)
 file(WRITE ${CMAKE_BINARY_DIR}/tinypds.c "#define TINY_PDS_IMPL\n#include \"${CMAKE_SOURCE_DIR}/tinypds.h\"")
 add_library(tinypds STATIC ${CMAKE_BINARY_DIR}/tinypds.c)
 
-file(WRITE ${CMAKE_BINARY_DIR}/tinypds_dom.c "#define TINY_PDS_DOM_IMPL\n#include \"${CMAKE_SOURCE_DIR}/dom/tinypds_dom.h\"")
+file(WRITE ${CMAKE_BINARY_DIR}/tinypds_dom.c "#define TINY_PDS_DOM_IMPL\n#include \"${CMAKE_SOURCE_DIR}/tinypds_dom.h\"")
 add_library(tinypds_dom STATIC ${CMAKE_BINARY_DIR}/tinypds_dom.c)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wshadow -Wextra -std=c99")
@@ -53,9 +53,6 @@ target_link_libraries(PDS_DOM_parse tinypds)
 add_executable(PDS_DOM_find test/PDS_DOM_find.c)
 target_link_libraries(PDS_DOM_find tinypds_dom tinypds munit)
 
-add_executable(PDS_DOM_htab test/PDS_DOM_htab.c)
-target_link_libraries(PDS_DOM_htab tinypds munit)
-
 add_test(PDS_string_tests PDS_string_tests)
 add_test(PDS_parse_tests PDS_parse_tests)
 add_test(PDS_parse_GASPRA_SUMM_RTN.LBL PDS_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/GASPRA_SUMM_RTN.LBL)
@@ -63,7 +60,6 @@ add_test(PDS_parse_LOR_0034851929_0X630_ENG_1.LBL PDS_parse ${CMAKE_CURRENT_SOUR
 add_test(PDS_parse_W20140403T020157750ID20F12.IMG PDS_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/W20140403T020157750ID20F12.IMG)
 add_test(PDS_parse_AMI_LR3_R00976_00031_00040.IMG PDS_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/AMI_LR3_R00976_00031_00040.IMG)
 
-add_test(PDS_DOM_htab PDS_DOM_htab)
 add_test(PDS_DOM_parse_W20140403T020157750ID20F12.IMG PDS_DOM_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/W20140403T020157750ID20F12.IMG)
 add_test(PDS_DOM_parse_0844636876_lvl1_0.lbl PDS_DOM_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/0844636876_lvl1_0.lbl)
 add_test(PDS_DOM_parse_hayabusa_20050907_20050908_v01.lbl PDS_DOM_parse ${CMAKE_CURRENT_SOURCE_DIR}/test/data/hayabusa_20050907_20050908_v01.lbl)

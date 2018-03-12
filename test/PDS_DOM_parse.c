@@ -7,7 +7,7 @@
 #include <tinypds.h>
 
 #define TINY_PDS_DOM_IMPL
-#include <dom/tinypds_dom.h>
+#include <tinypds_dom.h>
 
 void print_DOM_scalar(PDS_item *item, int depth) {
     PDS_scalar scalar;
@@ -135,7 +135,7 @@ int main(int argc, const char* argv[]) {
     
     print(item, 0);
 
-    PDS_DOM_destroy(item);
+    PDS_DOM_delete(item);
     
     free(buffer);
     return ret ? EXIT_SUCCESS : EXIT_FAILURE;
