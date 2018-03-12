@@ -486,7 +486,6 @@ static int PDS_htab_add(PDS_htab* tab, const char* key, size_t len, uintptr_t it
     PDS_htab_insert(tab, &bucket);
     return 1;
 }
-
 /**
  * Remove an element from the hash table.
  * @param [in] tab  Hash table.
@@ -591,12 +590,12 @@ static int PDS_DOM_add(PDS_DOM_payload *payload, PDS_type type, const char *firs
         return PDS_INVALID_VALUE;
     }
 
+    item->parent = payload->parent;
     if(item->parent) {
         if(!PDS_htab_add(&item->parent->htab, first, last-first, (uintptr_t)item)) {
             return PDS_FAILURE;
         }
     }
-    item->parent = payload->parent;
     if( (PDS_GROUP == type) || (PDS_OBJECT == type) ) {
         payload->parent = item;
     }
@@ -885,7 +884,8 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **item, PDS_error_des
     PDS_set_scalar_callback(&callbacks, PDS_DOM_parse_scalar);
     PDS_set_error_callback(&callbacks, PDS_DOM_error);
     
-    payload.root = payload.parent = NULL;
+    payload.root = NULL;
+    payload.parent = PDS_DOM_create(PDS_OBJECT, NULL, NULL);
     payload.current = payload.previous = NULL;
     
     payload.dimension = 0;
@@ -1068,7 +1068,8 @@ PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type sear
     PDS_item_impl *begin = (PDS_item_impl*)current;
     PDS_item_impl *it;
     PDS_item_impl *end;
-
+    uintptr_t ptr;
+    
     /* sanity check */
     if((NULL == name) || (NULL == current)) {
         return NULL;
@@ -1081,13 +1082,13 @@ PDS_item* PDS_DOM_find(const char *name, PDS_item *current, PDS_search_type sear
         return current;
     }
     switch(search) {
-        case PDS_ONLY_SIBLINGS: // [todo] use parent htab
-            for(it=begin->sibling, end=NULL; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->sibling)
-            {}
+        case PDS_ONLY_SIBLINGS:
+            ptr = PDS_htab_get(&begin->parent->htab, first, last-first);
+            it = (ptr != UINTPTR_MAX) ? (PDS_item_impl*)ptr : NULL;
             break;
-        case PDS_ONLY_CHILDREN: // [todo] use htab
-            for(it=begin->child, end=NULL; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->sibling)
-            {}
+        case PDS_ONLY_CHILDREN:
+            ptr = PDS_htab_get(&begin->htab, first, last-first);
+            it = (ptr != UINTPTR_MAX) ? (PDS_item_impl*)ptr : NULL;
             break;
         case PDS_CHILDREN_RECURSIVE:  // [todo] use htab
             for(it=begin->child, end=begin->sibling; (it!=end) && !PDS_string_compare(it->info.name.first, it->info.name.last, first, last); it=it->next)
