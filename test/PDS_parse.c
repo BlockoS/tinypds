@@ -1,34 +1,29 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <errno.h>
-#include <tinypds.h>
 
-#include "test.h"
 #include "utils.h"
 
 #define TINY_PDS_IMPL
 #include <tinypds.h>
 
-typedef struct
-{
+typedef struct {
     int depth;
 } user_data_t;
 
-void print_tab(int depth)
-{
-    int i;
-    for(i=0; i<depth; i++)
-    {
-        printf("    ");
-    }
+void dummy_error(const PDS_error_description *desc, void *unused) {
+    (void)unused;
+    fprintf(stderr, "line %d:%d: %s\n", desc->number, desc->position, desc->msg);
 }
-int dummy_scalar(const PDS_scalar *scalar, void *user_data)
-{
+
+int dummy_scalar(const PDS_scalar *scalar, void *user_data) {
     (void)user_data;
     print_scalar(scalar);
     return 1;
 }
 
-int dummy_attribute_begin(const char *first, const char *last, void *user_data)
-{
+int dummy_attribute_begin(const char *first, const char *last, void *user_data) {
     user_data_t *data = (user_data_t*)user_data;
     print_tab(data->depth);
     printf("[attribute] ");
@@ -37,16 +32,14 @@ int dummy_attribute_begin(const char *first, const char *last, void *user_data)
     return 1;
 }
 
-int dummy_attribute_end(const char *first, const char *last, void *user_data)
-{
+int dummy_attribute_end(const char *first, const char *last, void *user_data) {
     (void)first;
     (void)last;
     (void)user_data;
     return 1;
 }
 
-int dummy_pointer_begin(const char *first, const char *last, void *user_data)
-{
+int dummy_pointer_begin(const char *first, const char *last, void *user_data) {
     user_data_t *data = (user_data_t*)user_data;
     print_tab(data->depth);
     printf("[pointer  ] ");
@@ -55,46 +48,44 @@ int dummy_pointer_begin(const char *first, const char *last, void *user_data)
     return 1;
 }
 
-int dummy_pointer_end(const char *first, const char *last, void *user_data)
-{
+int dummy_pointer_end(const char *first, const char *last, void *user_data) {
     (void)first;
     (void)last;
     (void)user_data;
     return 1;
 }
 
-int dummy_set_begin(void *user_data)
-{
+int dummy_set_begin(void *user_data) {
     user_data_t *data = (user_data_t*)user_data;
     data->depth++;
     printf(" {\n");
     return 1;
 }
-int dummy_set_end(void *user_data)
-{
+
+int dummy_set_end(void *user_data) {
     user_data_t *data = (user_data_t*)user_data;
     data->depth--;
     print_tab(data->depth);
     printf("}\n");
     return 1;
 }
-int dummy_sequence_begin(void *user_data)
-{
+
+int dummy_sequence_begin(void *user_data) {
     user_data_t *data = (user_data_t*)user_data;
     data->depth++;
     printf("(\n");
     return 1;
 }
-int dummy_sequence_end(void *user_data)
-{
+
+int dummy_sequence_end(void *user_data) {
     user_data_t *data = (user_data_t*)user_data;
     data->depth--;
     print_tab(data->depth);
     printf(")\n");
     return 1;
 }
-int dummy_object_begin(const char *first, const char *last, void *user_data)
-{
+
+int dummy_object_begin(const char *first, const char *last, void *user_data) {
     user_data_t *data = (user_data_t*)user_data;
     print_tab(data->depth);
     printf("[object   ] ");
@@ -103,28 +94,8 @@ int dummy_object_begin(const char *first, const char *last, void *user_data)
     data->depth++;
     return 1;
 }
-int dummy_object_end(const char *first, const char *last, void *user_data)
-{
-    (void)first;
-    (void)last;
-    user_data_t *data = (user_data_t*)user_data;
-    data->depth--;
-    print_tab(data->depth);
-    printf("]\n");
-    return 1;
-}
-int dummy_group_begin(const char *first, const char *last, void *user_data)
-{
-    user_data_t *data = (user_data_t*)user_data;
-    print_tab(data->depth);
-    printf("[group    ] ");
-    print_string(first, last);
-    printf(" = [\n");
-    data->depth++;
-    return 1;
-}
-int dummy_group_end(const char *first, const char *last, void *user_data)
-{
+
+int dummy_object_end(const char *first, const char *last, void *user_data) {
     (void)first;
     (void)last;
     user_data_t *data = (user_data_t*)user_data;
@@ -134,8 +105,27 @@ int dummy_group_end(const char *first, const char *last, void *user_data)
     return 1;
 }
 
-int main(int argc, const char* argv[])
-{
+int dummy_group_begin(const char *first, const char *last, void *user_data) {
+    user_data_t *data = (user_data_t*)user_data;
+    print_tab(data->depth);
+    printf("[group    ] ");
+    print_string(first, last);
+    printf(" = [\n");
+    data->depth++;
+    return 1;
+}
+
+int dummy_group_end(const char *first, const char *last, void *user_data) {
+    (void)first;
+    (void)last;
+    user_data_t *data = (user_data_t*)user_data;
+    data->depth--;
+    print_tab(data->depth);
+    printf("]\n");
+    return 1;
+}
+
+int main(int argc, const char* argv[]) {
     PDS_callbacks callbacks;
 
     FILE *in;

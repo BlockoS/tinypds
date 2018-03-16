@@ -9,6 +9,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 find_package(CFITSIO)
 
 include_directories(${CFITSIO_INCLUDE_DIR} ../..)
+include_directories(${CFITSIO_INCLUDE_DIR} ../../dom)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wshadow -Wextra")
 
