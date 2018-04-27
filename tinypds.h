@@ -346,6 +346,9 @@ static inline int PDS_isalnum(char c) {
 static inline int PDS_toupper(char c) {
     return PDS_islower(c) ? ('A' + ((c)-'a')) : (c);
 }
+static inline int PDS_extascii(char c) {
+    return ((uint8_t)c >= 0x20) && ((uint8_t)c <= 0xfe);
+}
 #if 0
 static int PDS_tolower(char c) {
     return PDS_isupper(c) ? ('a' + ((c)-'A')) : (c);
@@ -944,7 +947,7 @@ static int PDS_parse_string(PDS_parser *parser) {
 
     parser->scalar.text.first = first;
 
-    for(; (first<last) && ('"' != *first) && (PDS_isspace(*first) || ((*first>=0x20) && (*first<=0x7e))); first++) {
+    for(; (first<last) && ('"' != *first) && (PDS_isspace(*first) || PDS_extascii(*first)); first++) {
         if('\n' == *first) {
             ++parser->line_num;
             parser->line = first+1;
