@@ -16,6 +16,12 @@ enum PDS_SAMPLE_TYPE
     PDS_SAMPLE_UNKNOWN_TYPE = 0,
     /** LSB unsigned integer. **/
     PDS_SAMPLE_UINT_LSB,
+    /** MSB unsigned integer. **/
+    PDS_SAMPLE_UINT_MSB,
+    /** LSB integer. **/
+    PDS_SAMPLE_INT_LSB,
+    /** MSB integer. **/
+    PDS_SAMPLE_INT_MSB,
     /** 32 bits IEEE float. **/
     PDS_SAMPLE_FLOAT
 };

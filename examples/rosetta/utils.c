@@ -72,6 +72,9 @@ uint8_t convert_type_name(const char *first, const char *last)
         uint8_t type;
     } type_names[] =
     {
+        { "MSB_INTEGER", PDS_SAMPLE_INT_MSB },
+        { "LSB_INTEGER", PDS_SAMPLE_INT_LSB },
+        { "MSB_UNSIGNED_INTEGER", PDS_SAMPLE_UINT_MSB },
         { "LSB_UNSIGNED_INTEGER", PDS_SAMPLE_UINT_LSB },
         { "PC_REAL", PDS_SAMPLE_FLOAT }
     };
@@ -104,6 +107,31 @@ int write_image(const char *filename, char *buffer, size_t size, size_t offset, 
     int bitpix, datatype;
     switch(image->sample_type)
     {
+        case PDS_SAMPLE_INT_MSB:
+        case PDS_SAMPLE_INT_LSB:
+            switch(image->sample_bits)
+            {
+                case 8:
+                    bitpix   = SBYTE_IMG;
+                    datatype = TSBYTE;
+                    break;
+                case 16:
+                    bitpix   = SHORT_IMG;
+                    datatype = TSHORT;
+                    break;
+                case 32:
+                    bitpix   = LONG_IMG;
+                    datatype = TINT;
+                    break;
+                case 64:
+                    bitpix   = LONGLONG_IMG;
+                    datatype = TLONGLONG;
+                default:
+                    fprintf(stderr, "Unsupported type (uint)\n");
+                    return 0;
+            }
+            break;
+        case PDS_SAMPLE_UINT_MSB:
         case PDS_SAMPLE_UINT_LSB:
             switch(image->sample_bits)
             {
@@ -120,14 +148,13 @@ int write_image(const char *filename, char *buffer, size_t size, size_t offset, 
                     datatype = TUINT;
                     break;
                 default:
-                    fprintf(stderr, "Invalid type (uint)\n");
+                    fprintf(stderr, "Unsupported type (uint)\n");
                     return 0;
             }
             break;
         case PDS_SAMPLE_FLOAT:       
             switch(image->sample_bits)
             {
-                // [todo] 16bit float => pfm or OpenEXR
                 case 32:
                     bitpix   = FLOAT_IMG;
                     datatype = TFLOAT;
@@ -137,13 +164,53 @@ int write_image(const char *filename, char *buffer, size_t size, size_t offset, 
                     datatype = TDOUBLE;
                     break;
                 default:
-                    fprintf(stderr, "Invalid type (float)\n");
+                    fprintf(stderr, "Unsupported type (float)\n");
                     return 0;
             }
             break;
         default:
-            fprintf(stderr, "Invalid type\n");
+            fprintf(stderr, "Unsupported type\n");
             return 0;
+    }
+    
+    // Converts MSB to LSB
+    if(((image->sample_type == PDS_SAMPLE_INT_MSB) || (image->sample_type == PDS_SAMPLE_UINT_MSB)) && (image->sample_bits != 8)) {
+        uint8_t *ptr = (uint8_t*)(buffer+offset);
+        for(size_t i=0; i<element_count; i++) {
+            uint8_t tmp;
+            switch(image->sample_bits) {
+                case 16:
+                    tmp = ptr[0];
+                    ptr[0] = ptr[1];
+                    ptr[1] = tmp;
+                    ptr += 2;
+                    break;
+                case 32:
+                    tmp = ptr[0];
+                    ptr[0] = ptr[3];
+                    ptr[3] = tmp;
+                    tmp = ptr[1];
+                    ptr[1] = ptr[2];
+                    ptr[2] = tmp;                    
+                    ptr += 4;
+                    break; 
+                case 64:
+                    tmp = ptr[0];
+                    ptr[0] = ptr[7];
+                    ptr[7] = tmp;
+                    tmp = ptr[1];
+                    ptr[1] = ptr[6];
+                    ptr[6] = tmp;                    
+                    tmp = ptr[2];
+                    ptr[2] = ptr[5];
+                    ptr[5] = tmp;                    
+                    tmp = ptr[3];
+                    ptr[3] = ptr[4];
+                    ptr[4] = tmp;                    
+                    ptr += 8;
+                    break; 
+            }
+        }
     }
     
     fits_create_file(&fptr, filename, &status); 
