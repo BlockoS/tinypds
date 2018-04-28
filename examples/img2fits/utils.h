@@ -1,6 +1,6 @@
 /* Random utility functions.
  * Licensed under the MIT License
- * (c) 2016 Vincent Cruz
+ * (c) 2018 Vincent Cruz
  */
 #ifndef UTILS_H
 #define UTILS_H

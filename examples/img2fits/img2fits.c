@@ -1,10 +1,6 @@
-/* 
- * Convert images embedded from Rosetta PDS3 files to FITS image files.
- * PDS3 files can be found at the following address:
- * ftp://psa.esac.esa.int/pub/mirror/INTERNATIONAL-ROSETTA-MISSION/OSIWAC/
- * 
+/* Convert images embedded in PDS3 files to FITS image files.
  * Licensed under the MIT License
- * (c) 2016 Vincent Cruz
+ * (c) 2018 Vincent Cruz
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,8 +16,8 @@ const char *g_image_string = "IMAGE";
 
 void usage()
 {
-    fprintf(stderr, "rosetta_extract name input.pds out.fits\n"
-                    "    name is either IMAGE, SIGMA_MAP_IMAGE or QUALITY_MAP_IMAGE\n");
+    fprintf(stderr, "img2fits name input.pds out.fits\n"
+                    "    name can be either IMAGE, SIGMA_MAP_IMAGE or QUALITY_MAP_IMAGE\n");
 }
 /** Element type **/
 enum PDS_ELEMENT_TYPE
@@ -39,6 +35,8 @@ typedef struct PDS_payload_t
     size_t record_size;
     /** Image record number. **/
     size_t image_record;
+    /** Image data offset. **/
+    size_t offset;
     /** Ignore elements if non zero. **/
     int ignore;
     /** Element depth. **/
@@ -95,6 +93,15 @@ int image_record(const PDS_scalar *scalar, PDS_payload *payload)
         return 0;
     }
     payload->image_record = (size_t) scalar->integer.value;
+    payload->offset = 0;
+    if(scalar->integer.unit.first)
+    {
+        const char *bytes_unit = "BYTES";
+        if(PDS_string_case_compare(scalar->integer.unit.first, scalar->integer.unit.last, &bytes_unit[0], &bytes_unit[4]))
+        {
+            payload->offset = payload->image_record - 1;
+        }
+    }
     return 1;
 }
 /**
@@ -494,6 +501,7 @@ int main(int argc, char **argv)
     }
 
     memset(&payload, 0, sizeof(PDS_payload));
+    payload.image.bands = 1;
 
     PDS_set_error_callback(&callbacks, print_error);
     PDS_set_scalar_callback(&callbacks, parse_scalar);
@@ -507,7 +515,10 @@ int main(int argc, char **argv)
     ret = PDS_parse(&callbacks, buffer, (int)size, &payload);
     if(ret)
     {
-        ret = write_image(argv[3], buffer, size, (payload.image_record-1) * payload.record_size, &payload.image);
+        if(!payload.offset) {
+            payload.offset = (payload.image_record-1) * payload.record_size;
+        }
+        ret = write_image(argv[3], buffer, size, payload.offset, &payload.image);
     }
 
     free(buffer);

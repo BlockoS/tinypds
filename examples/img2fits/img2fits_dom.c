@@ -1,10 +1,6 @@
-/* 
- * Convert images embedded from Rosetta PDS3 files to FITS image files.
- * PDS3 files can be found at the following address:
- * ftp://psa.esac.esa.int/pub/mirror/INTERNATIONAL-ROSETTA-MISSION/OSIWAC/
- * 
+/* Convert images embedded in PDS3 files to FITS image files.
  * Licensed under the MIT License
- * (c) 2016 Vincent Cruz
+ * (c) 2018 Vincent Cruz
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,8 +18,8 @@ const char *g_image_label = "IMAGE";
 
 static void usage()
 {
-    fprintf(stderr, "rosetta_extract_dom name input.pds out.fits\n"
-                    "    name is either IMAGE, SIGMA_MAP_IMAGE or QUALITY_MAP_IMAGE\n");
+    fprintf(stderr, "img2fits_dom name input.pds out.fits\n"
+                    "    name can be either IMAGE, SIGMA_MAP_IMAGE or QUALITY_MAP_IMAGE\n");
 }
 
 static int find_scalar(PDS_item *root, const char *name, PDS_type type, int value_type, PDS_search_type search, PDS_scalar *scalar)
@@ -120,6 +116,16 @@ int main(int argc, char **argv)
         {
             PDS_item *current = root;
             image_record = scalar.integer.value;
+            int compute_offset = 1;
+            if(scalar.integer.unit.first) 
+            {
+                const char *bytes_unit = "BYTES";
+                if(PDS_string_case_compare(scalar.integer.unit.first, scalar.integer.unit.last, &bytes_unit[0], &bytes_unit[4])) 
+                {
+                    compute_offset = 0;
+                }
+            }
+            
             ret = 0;
             do
             {
@@ -141,12 +147,18 @@ int main(int argc, char **argv)
                 
                 ret = ret && find_scalar(current, "BANDS", PDS_ATTRIBUTE, PDS_INTEGER_VALUE, PDS_ONLY_CHILDREN, &scalar);
                 if(ret) { image.bands = scalar.integer.value; }
+                else { 
+                    fprintf(stderr, "assuming BANDS = 1\n");
+                    ret = 1;
+                    image.bands = 1;
+                }
                 
                 ret = ret && find_scalar(current, "SAMPLE_TYPE", PDS_ATTRIBUTE, PDS_IDENTIFIER_VALUE, PDS_ONLY_CHILDREN, &scalar);
                 if(ret)
                 {
-                    size_t offset = (image_record-1) * record_size;
+                    size_t offset = compute_offset ? ((image_record-1) * record_size) : (image_record-1);
                     ret = image_sample_type(&scalar, &image.sample_type);
+                    printf("%ld\n", offset);
                     ret = ret && write_image(argv[3], buffer, size, offset, &image);
                 }
             }
