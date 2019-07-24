@@ -76,7 +76,8 @@ uint8_t convert_type_name(const char *first, const char *last)
         { "LSB_INTEGER", PDS_SAMPLE_INT_LSB },
         { "MSB_UNSIGNED_INTEGER", PDS_SAMPLE_UINT_MSB },
         { "LSB_UNSIGNED_INTEGER", PDS_SAMPLE_UINT_LSB },
-        { "PC_REAL", PDS_SAMPLE_FLOAT }
+        { "PC_REAL", PDS_SAMPLE_FLOAT },
+        { "IEEE_REAL", PDS_SAMPLE_FLOAT }
     };
     size_t i;
     for(i=0; i<ARRAY_SIZE(type_names); i++)
@@ -126,6 +127,7 @@ int write_image(const char *filename, char *buffer, size_t size, size_t offset, 
                 case 64:
                     bitpix   = LONGLONG_IMG;
                     datatype = TLONGLONG;
+                    break;
                 default:
                     fprintf(stderr, "Unsupported type (uint)\n");
                     return 0;
