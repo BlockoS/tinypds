@@ -1643,7 +1643,7 @@ static int PDS_parse_statement(PDS_parser *parser) {
                     }
                 }
                 if(0 == PDS_parse_rhs(parser)) {
-                    PDS_error(parser, parser->status, "invalid right value");                   // [todo] the error might have already been reported
+                    PDS_error(parser, parser->status, "invalid right value");
                     return 0;
                 }
                 if(0 != end) {
@@ -1691,7 +1691,7 @@ static int PDS_parse_statement(PDS_parser *parser) {
 
     /* Check for new line. */
     if(parser->line_num <= line) {
-        PDS_error(parser, PDS_INVALID_VALUE, "no newline at the end of statement");
+        PDS_error(parser, PDS_INVALID_VALUE, "invalid input");
         return 0;
     }
     return 1;
