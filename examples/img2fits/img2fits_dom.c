@@ -1,6 +1,6 @@
 /* Convert images embedded in PDS3 files to FITS image files.
  * Licensed under the MIT License
- * (c) 2018 Vincent Cruz
+ * (c) 2018-2020 Vincent Cruz
  */
 #include <stdio.h>
 #include <stdlib.h>

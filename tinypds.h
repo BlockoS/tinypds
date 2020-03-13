@@ -6,7 +6,7 @@
  *     #define TINY_PDS_IMPL
  *
  * Licensed under the MIT License
- * (c) 2016-2018 Vincent Cruz
+ * (c) 2016-2020 Vincent Cruz
  */
 #ifndef TINY_PDS_H
 #define TINY_PDS_H
@@ -470,7 +470,7 @@ static int PDS_skip_comment(PDS_parser *parser) {
             return 1;
         }
         else if(('\r' == c) || ('\n' == c)) {
-            PDS_error(parser, PDS_INVALID_VALUE, "multi-line comment");
+            PDS_error(parser, PDS_INVALID_VALUE, "unterminated comment");
             goto err;
         }
         else if(('*' == c) && ('/' == previous)) {
@@ -481,7 +481,7 @@ static int PDS_skip_comment(PDS_parser *parser) {
     }
 no_input:
     /* No data left. */
-    PDS_error(parser, PDS_INCOMPLETE, "nested comments");
+    PDS_error(parser, PDS_INCOMPLETE, "unterminated comments");
 err:
     parser->current = current;
     return 0;
@@ -1364,7 +1364,6 @@ static int PDS_parse_scalar_value(PDS_parser *parser) {
             }
             else {
                 PDS_error(parser, PDS_INVALID_VALUE, "invalid scalar value");
-
             }
             break;
     }

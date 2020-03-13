@@ -1,6 +1,6 @@
 /* Random utility functions.
  * Licensed under the MIT License
- * (c) 2018 Vincent Cruz
+ * (c) 2018-2020 Vincent Cruz
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -16,7 +16,7 @@
 /* Returns a pointer to the last character of a null terminated string. */
 const char* str_last(const char *str)
 {
-    return str + strlen(str) - 1;    
+    return str + strlen(str) - 1;
 }
 
 /* Store file content to memory. */
@@ -154,7 +154,7 @@ int write_image(const char *filename, char *buffer, size_t size, size_t offset, 
                     return 0;
             }
             break;
-        case PDS_SAMPLE_FLOAT:       
+        case PDS_SAMPLE_FLOAT:
             switch(image->sample_bits)
             {
                 case 32:
@@ -178,43 +178,45 @@ int write_image(const char *filename, char *buffer, size_t size, size_t offset, 
     // Converts MSB to LSB
     if(((image->sample_type == PDS_SAMPLE_INT_MSB) || (image->sample_type == PDS_SAMPLE_UINT_MSB)) && (image->sample_bits != 8)) {
         uint8_t *ptr = (uint8_t*)(buffer+offset);
-        for(size_t i=0; i<element_count; i++) {
-            uint8_t tmp;
-            switch(image->sample_bits) {
-                case 16:
-                    tmp = ptr[0];
-                    ptr[0] = ptr[1];
-                    ptr[1] = tmp;
-                    ptr += 2;
-                    break;
-                case 32:
-                    tmp = ptr[0];
-                    ptr[0] = ptr[3];
-                    ptr[3] = tmp;
-                    tmp = ptr[1];
-                    ptr[1] = ptr[2];
-                    ptr[2] = tmp;                    
-                    ptr += 4;
-                    break; 
-                case 64:
-                    tmp = ptr[0];
-                    ptr[0] = ptr[7];
-                    ptr[7] = tmp;
-                    tmp = ptr[1];
-                    ptr[1] = ptr[6];
-                    ptr[6] = tmp;                    
-                    tmp = ptr[2];
-                    ptr[2] = ptr[5];
-                    ptr[5] = tmp;                    
-                    tmp = ptr[3];
-                    ptr[3] = ptr[4];
-                    ptr[4] = tmp;                    
-                    ptr += 8;
-                    break; 
+        for(size_t j=0; j<image->bands; j++) {
+            for(size_t i=0; i<element_count; i++) {
+                uint8_t tmp;
+                switch(image->sample_bits) {
+                    case 16:
+                        tmp = ptr[0];
+                        ptr[0] = ptr[1];
+                        ptr[1] = tmp;
+                        ptr += 2;
+                        break;
+                    case 32:
+                        tmp = ptr[0];
+                        ptr[0] = ptr[3];
+                        ptr[3] = tmp;
+                        tmp = ptr[1];
+                        ptr[1] = ptr[2];
+                        ptr[2] = tmp;
+                        ptr += 4;
+                        break; 
+                    case 64:
+                        tmp = ptr[0];
+                        ptr[0] = ptr[7];
+                        ptr[7] = tmp;
+                        tmp = ptr[1];
+                        ptr[1] = ptr[6];
+                        ptr[6] = tmp;
+                        tmp = ptr[2];
+                        ptr[2] = ptr[5];
+                        ptr[5] = tmp;
+                        tmp = ptr[3];
+                        ptr[3] = ptr[4];
+                        ptr[4] = tmp;
+                        ptr += 8;
+                        break; 
+                }
             }
         }
     }
-    
+
     fits_create_file(&fptr, filename, &status); 
     fits_create_img(fptr, bitpix, 2, axis_count, &status);
     fits_write_img(fptr, datatype, image->bands, element_count, buffer+offset, &status);

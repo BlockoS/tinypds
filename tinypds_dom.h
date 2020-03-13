@@ -6,7 +6,7 @@
  *     #define TINY_PDS_DOM_IMPL
  *
  * Licensed under the MIT License
- * (c) 2016-2018 Vincent Cruz
+ * (c) 2016-2020 Vincent Cruz
  */
 #ifndef TINY_PDS_DOM_H
 #define TINY_PDS_DOM_H

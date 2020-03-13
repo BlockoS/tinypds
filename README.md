@@ -301,4 +301,4 @@ Finally the parsing is started by calling **PDS_parse**. An implementation examp
 
 ## License ##
 The MIT License
-Copyright (c) 2018 Vincent Cruz
+Copyright (c) 2018-2020 Vincent Cruz
