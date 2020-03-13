@@ -429,7 +429,7 @@ static void PDS_error(PDS_parser *parser, int error, const char *message) {
         PDS_error_description description;
         description.line     = parser->line;
         description.number   = parser->line_num;
-        description.position = parser->current - parser->line;
+        description.position = parser->current - parser->line + 1;
         description.status   = error;
         description.msg      = message;
         parser->callbacks.error(&description, parser->user_data);
@@ -1643,7 +1643,7 @@ static int PDS_parse_statement(PDS_parser *parser) {
                     }
                 }
                 if(0 == PDS_parse_rhs(parser)) {
-                    PDS_error(parser, parser->status, "invalid right value");
+                    PDS_error(parser, parser->status, "invalid right value");                   // [todo] the error might have already been reported
                     return 0;
                 }
                 if(0 != end) {
@@ -1736,7 +1736,7 @@ int PDS_parse(PDS_callbacks *callbacks, const char *buffer, int len, void *user_
     if(!PDS_string_case_compare(parser.scalar.identifier.first, parser.scalar.identifier.last, pds_version_id_first, pds_version_id_last)) {
         PDS_error(&parser, PDS_INVALID_VALUE, "invalid PDS version id");
         return 0;
-    }   
+    }
     /* Parse the remaining. */  
     for(ret=1; ret && (PDS_OK == parser.status); ) {
         ret = PDS_parse_statement(&parser);
