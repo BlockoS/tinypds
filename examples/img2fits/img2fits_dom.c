@@ -100,7 +100,9 @@ int main(int argc, char **argv)
     ret = PDS_DOM_parse(buffer, size, &root, &err);
     if(!ret)
     {
-        fprintf(stderr, "%s: parse error line %d:%d : %s\n", argv[2], err.number, err.position, err.msg);
+        const char *end = PDS_find_first(err.line, err.line+strlen(err.line), '\n');
+        int count = end-err.line;
+        fprintf(stderr, "%s:%d:%d: error: %s\n%4d|%.*s    |%*s\n", argv[2], err.number, err.position, err.msg, err.number, count+1, err.line, err.position, "^");
     }
     else
     {

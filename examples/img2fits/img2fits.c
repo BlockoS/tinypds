@@ -208,7 +208,7 @@ void print_error(const PDS_error_description* desc, void *unused)
     (void)unused;
     const char *end = PDS_find_first(desc->line, desc->line+strlen(desc->line), '\n');
     int count = end-desc->line;
-    fprintf(stderr, "error: %s\n%4d|%.*s    |%*s\n", desc->msg, desc->number, count+1, desc->line, desc->position, "^");
+    fprintf(stderr, "error:%d:%d: %s\n%4d|%.*s    |%*s\n", desc->number, desc->position, desc->msg, desc->number, count+1, desc->line, desc->position, "^");
 }
 /**
  * Global attribute parser.
