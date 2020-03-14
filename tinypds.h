@@ -422,10 +422,11 @@ typedef struct {
 /**
  * Set error and run error display callback.
  * @param [in,out] parser Parser.
+ * @param [in]     current Current string pointer.
  * @param [in]     error Error status @see PDS_STATUS
  * @param [in]     message Error message.
  */
-static void PDS_error(PDS_parser *parser, int error, const char *message) {
+static void PDS_error(PDS_parser *parser, const char *current, int error, const char *message) {
     parser->status = error;
     if(0 != parser->callbacks.error) {
         PDS_error_description description;
@@ -436,7 +437,7 @@ static void PDS_error(PDS_parser *parser, int error, const char *message) {
             }
         }
         description.number     = parser->line_num;
-        description.position   = parser->current - parser->line + 1;
+        description.position   = current - parser->line + 1;
         description.status     = error;
         description.msg        = message;
         parser->callbacks.error(&description, parser->user_data);
@@ -457,14 +458,14 @@ static int PDS_skip_comment(PDS_parser *parser) {
     /* The first 2 characters must be '/' and '*'. */
     if(current > end) { goto no_input; }
     if('/' != current[0]) {
-        PDS_error(parser, PDS_INVALID_VALUE, "invalid input");
+        PDS_error(parser, current, PDS_INVALID_VALUE, "invalid input");
         goto err;
     }
     current++;
     
     if(current > end) { goto no_input; }
     if('*' != current[0]) {
-        PDS_error(parser, PDS_INVALID_VALUE, "invalid input");
+        PDS_error(parser, current, PDS_INVALID_VALUE, "invalid input");
         goto err;
     }
     current++;
@@ -477,18 +478,18 @@ static int PDS_skip_comment(PDS_parser *parser) {
             return 1;
         }
         else if(('\r' == c) || ('\n' == c)) {
-            PDS_error(parser, PDS_INVALID_VALUE, "unterminated comment");
+            PDS_error(parser, current, PDS_INVALID_VALUE, "unterminated comment");
             goto err;
         }
         else if(('*' == c) && ('/' == previous)) {
-            PDS_error(parser, PDS_INVALID_VALUE, "nested comments");
+            PDS_error(parser, current, PDS_INVALID_VALUE, "nested comments");
             goto err;
         }
         previous = c;
     }
 no_input:
     /* No data left. */
-    PDS_error(parser, PDS_INCOMPLETE, "unterminated comments");
+    PDS_error(parser, current, PDS_INCOMPLETE, "unterminated comments");
 err:
     parser->current = current;
     return 0;
@@ -573,6 +574,9 @@ static int64_t PDS_parse_int_base(const char *first, const char *last, const cha
     int64_t cutlimit;
     int any;
     int neg = 0;
+    if(end) {
+        *end = first;
+    }
     /* Sanity check. */
     if(PDS_OK != *status) {
         return 0;
@@ -663,7 +667,7 @@ static int PDS_parse_int(PDS_parser *parser) {
     /* Parse value. */
     value = PDS_parse_int_base(parser->current, parser->last, &ptr, 10, &parser->status);
     if(PDS_OK != parser->status) {
-        PDS_error(parser, parser->status, "invalid integer value");
+        PDS_error(parser, ptr, parser->status, "invalid integer value");
         return 0;
     }
     /* 
@@ -672,7 +676,7 @@ static int PDS_parse_int(PDS_parser *parser) {
      */
     if((ptr < parser->last) && (*ptr == '#')) {
         if((value < 2) || (value > 16)) {
-            PDS_error(parser, PDS_INVALID_RANGE, "invalid integer base");
+            PDS_error(parser, ptr, PDS_INVALID_RANGE, "invalid integer base");
             return 0;
         }
         const char *current = ptr+1;
@@ -680,7 +684,7 @@ static int PDS_parse_int(PDS_parser *parser) {
         if(PDS_OK == parser->status) {
             /* Check that the number is followed by a closing '#'. */
             if('#' != *ptr) {
-                PDS_error(parser, PDS_INVALID_VALUE, "invalid of missing delimiter");
+                PDS_error(parser, ptr, PDS_INVALID_VALUE, "invalid of missing delimiter");
                 return 0;
             }
             else {
@@ -688,7 +692,7 @@ static int PDS_parse_int(PDS_parser *parser) {
             }
         }
         else {
-            PDS_error(parser, parser->status, "invalid integer value");
+            PDS_error(parser, ptr, parser->status, "invalid integer value");
             return 0;
         }
     }
@@ -729,7 +733,7 @@ static int PDS_parse_real(PDS_parser *parser) {
         neg = 1;
     }
     if(PDS_OK != parser->status) {
-        PDS_error(parser, parser->status, "invalid value");
+        PDS_error(parser, ptr, parser->status, "invalid value");
         return 0;
     }
     value = (double)integer;
@@ -751,7 +755,7 @@ static int PDS_parse_real(PDS_parser *parser) {
         int64_t n;
         n = PDS_parse_int_base(ptr+1, parser->last, &ptr, 10, &parser->status);
         if(PDS_OK != parser->status) {
-            PDS_error(parser, PDS_INVALID_VALUE, "invalid exponent value");
+            PDS_error(parser, ptr, PDS_INVALID_VALUE, "invalid exponent value");
             return 0;
         }
         if(n < 0) {
@@ -835,11 +839,11 @@ static int PDS_parse_unit(PDS_parser *parser) {
         return 0;
     }
     if((PDS_INTEGER_VALUE != parser->scalar.type) && (PDS_REAL_VALUE != parser->scalar.type)) {
-        PDS_error(parser, PDS_INVALID_ARGUMENT, "invalid argument");
+        PDS_error(parser, first, PDS_INVALID_ARGUMENT, "invalid argument");
         return 0;
     }
     if('<' != *first) {
-        PDS_error(parser, PDS_INVALID_VALUE, "invalid unit delimiter");
+        PDS_error(parser, first, PDS_INVALID_VALUE, "invalid unit delimiter");
         return 0;
     }
     ++first;
@@ -860,20 +864,20 @@ static int PDS_parse_unit(PDS_parser *parser) {
                     const char *next = 0;
                     (void)PDS_parse_int_base(first+1, parser->last, &next, 10, &parser->status);
                     if(PDS_OK != parser->status) {
-                        PDS_error(parser, parser->status, "invalid unit exponent");
+                        PDS_error(parser, next, parser->status, "invalid unit exponent");
                         return 0;
                     }
                     first = next;
                 }
                 else if(!PDS_isalpha(*first)) {
-                    PDS_error(parser, PDS_INVALID_VALUE, "invalid unit");
+                    PDS_error(parser, first, PDS_INVALID_VALUE, "invalid unit");
                     return 0;
                 }
             }
             else if('/' == *first) {
                 ++first;
                 if(!PDS_isalpha(*first)) {
-                    PDS_error(parser, PDS_INVALID_VALUE, "invalid unit divisor");
+                    PDS_error(parser, first, PDS_INVALID_VALUE, "invalid unit divisor");
                     return 0;
                 }
             }
@@ -881,13 +885,13 @@ static int PDS_parse_unit(PDS_parser *parser) {
                 break;
             }
             else {
-                PDS_error(parser, PDS_INVALID_VALUE, "unauthorized unit character");
+                PDS_error(parser, first, PDS_INVALID_VALUE, "unauthorized unit character");
                 return 0;
             }
         }
     }
     if((first>parser->last) || ('>' != *first)) {
-        PDS_error(parser, PDS_INVALID_VALUE, "missing or invalid unit delimiter");
+        PDS_error(parser, first, PDS_INVALID_VALUE, "missing or invalid unit delimiter");
         return 0;
     }
     parser->scalar.integer.unit.last = first-1;
@@ -908,14 +912,14 @@ static int PDS_parse_symbol(PDS_parser *parser) {
     }
     /* The string must start with an apostrophe. */
     if('\'' != *first) {
-        PDS_error(parser, PDS_INVALID_VALUE, "invalid delimiter");
+        PDS_error(parser, first, PDS_INVALID_VALUE, "invalid delimiter");
         return 0;
     }
     ++first;
     parser->scalar.symbolic.first = first;
     /* The string must contain at least one valid character. */
     if((first>=parser->last) || ('\'' == *first)) {
-        PDS_error(parser, PDS_INVALID_VALUE, "empty literal symbol");
+        PDS_error(parser, first, PDS_INVALID_VALUE, "empty literal symbol");
         return 0;
     }
     /* The string may contain spacing, alpha-numeric, other and special characters except the apostrophe. */
@@ -923,7 +927,7 @@ static int PDS_parse_symbol(PDS_parser *parser) {
     }
     
     if((first>parser->last) || ('\'' != *first)) {
-        PDS_error(parser, PDS_INVALID_VALUE, "missing literal symbol delimiter");
+        PDS_error(parser, first, PDS_INVALID_VALUE, "missing literal symbol delimiter");
         return 0;
     }
     parser->scalar.symbolic.last = first-1;
@@ -948,7 +952,7 @@ static int PDS_parse_string(PDS_parser *parser) {
     }
 
     if('"' != *first++) {
-        PDS_error(parser, PDS_INVALID_VALUE, "invalid or missing string delimiter");
+        PDS_error(parser,first, PDS_INVALID_VALUE, "invalid or missing string delimiter");
         return 0;
     }
 
@@ -962,11 +966,11 @@ static int PDS_parse_string(PDS_parser *parser) {
     }
     
     if(first > last) {
-        PDS_error(parser, PDS_INCOMPLETE, "nested comments");
+        PDS_error(parser, first, PDS_INCOMPLETE, "nested comments");
         return 0;
     }
     if('"' != *first) {
-        PDS_error(parser, PDS_INVALID_VALUE, "missing string delimiter");
+        PDS_error(parser, first, PDS_INVALID_VALUE, "missing string delimiter");
         return 0;
     }
     
@@ -1191,7 +1195,7 @@ static int PDS_parse_datetime(PDS_parser *parser) {
     
     ret = PDS_parse_date(parser->current, parser->last, &next, date, &parser->status);  
     if(PDS_OK != parser->status) {
-        PDS_error(parser, parser->status, "invalid date");
+        PDS_error(parser, next, parser->status, "invalid date");
         return 0;
     }
     if(ret) {   
@@ -1210,7 +1214,7 @@ static int PDS_parse_datetime(PDS_parser *parser) {
         parser->current = next;
     }
     else {
-        PDS_error(parser, parser->status, "invalid time");  
+        PDS_error(parser, next, parser->status, "invalid time");  
     }
     return ret;
 }
@@ -1285,7 +1289,7 @@ static int PDS_parse_lhs(PDS_parser *parser) {
     if('^' == *lhs->first) {
         lhs->first = PDS_parse_identifier(lhs->first+1, parser->last, &parser->current, &parser->status);
         if(PDS_OK != parser->status) {
-            PDS_error(parser, parser->status, "invalid pointer name");
+            PDS_error(parser,  parser->current, parser->status, "invalid pointer name");
             return 0;
         }
         lhs->last = parser->current-1;
@@ -1314,7 +1318,7 @@ static int PDS_parse_lhs(PDS_parser *parser) {
         return 1;
     }
     /* No valid token found. */ 
-    PDS_error(parser, PDS_INVALID_VALUE, "no valid token found");
+    PDS_error(parser, parser->current, PDS_INVALID_VALUE, "no valid token found");
     return 0;
 }
 /**
@@ -1370,7 +1374,7 @@ static int PDS_parse_scalar_value(PDS_parser *parser) {
                 }
             }
             else {
-                PDS_error(parser, PDS_INVALID_VALUE, "invalid scalar value");
+                PDS_error(parser, parser->current, PDS_INVALID_VALUE, "invalid scalar value");
             }
             break;
     }
@@ -1404,7 +1408,7 @@ static int PDS_parse_comma_separated(PDS_parser *parser, char delimiter) {
                         break;
                     }
                     else if(',' != c) {
-                        PDS_error(parser, PDS_INVALID_VALUE, "invalid element separator");
+                        PDS_error(parser, parser->current, PDS_INVALID_VALUE, "invalid element separator");
                         return 0;
                     }
                 }
@@ -1412,7 +1416,7 @@ static int PDS_parse_comma_separated(PDS_parser *parser, char delimiter) {
         }
     } 
     if(parser->current > parser->last) {
-        PDS_error(parser, PDS_INVALID_VALUE, "missing separator");
+        PDS_error(parser, parser->current, PDS_INVALID_VALUE, "missing separator");
         ret = 0;
     }
     return ret;
@@ -1431,7 +1435,7 @@ static int PDS_parser_collection_1D(PDS_parser *parser, char start, char end, PD
         return 0;
     }
     if(0 == callbacks) {
-        PDS_error(parser, PDS_INVALID_ARGUMENT, "invalid collection callbacks");
+        PDS_error(parser, parser->current, PDS_INVALID_ARGUMENT, "invalid collection callbacks");
         return PDS_INVALID_ARGUMENT;
     }
     ret = PDS_skip_whitespaces(parser);
@@ -1439,7 +1443,7 @@ static int PDS_parser_collection_1D(PDS_parser *parser, char start, char end, PD
         return ret;
     }
     if(start != *parser->current++) {
-        PDS_error(parser, PDS_INVALID_VALUE, "missing opening separator");
+        PDS_error(parser, parser->current, PDS_INVALID_VALUE, "missing opening separator");
         return 0;
     }
     if(0 != callbacks->begin) {
@@ -1451,7 +1455,7 @@ static int PDS_parser_collection_1D(PDS_parser *parser, char start, char end, PD
     ret = PDS_skip_whitespaces(parser);
     if(end == *parser->current) {
         parser->current++;
-        PDS_error(parser, PDS_INVALID_VALUE, "empty collection");
+        PDS_error(parser, parser->current, PDS_INVALID_VALUE, "empty collection");
         return 0;
     }
     ret = PDS_parse_comma_separated(parser, end);
@@ -1487,7 +1491,7 @@ static int PDS_parse_sequence(PDS_parser *parser) {
         return 0;
     }
     if('(' != *parser->current++) {
-        PDS_error(parser, PDS_INVALID_VALUE, "missing sequence separator");
+        PDS_error(parser, parser->current, PDS_INVALID_VALUE, "missing sequence separator");
         return 0;
     }
     if(0 != parser->callbacks.sequence.begin) {
@@ -1515,7 +1519,7 @@ static int PDS_parse_sequence(PDS_parser *parser) {
                             break;
                         }
                         else {
-                            PDS_error(parser, PDS_INVALID_VALUE, "Expected ')' delimiter");
+                            PDS_error(parser, parser->current, PDS_INVALID_VALUE, "Expected ')' delimiter");
                             return 0;
                         }
                     }
@@ -1605,7 +1609,7 @@ static int PDS_parse_statement(PDS_parser *parser) {
 
         /* Check for new line. */
         if(parser->line_num <= line) {
-            PDS_error(parser, PDS_INVALID_VALUE, "no newline at the end of statement");
+            PDS_error(parser, parser->current, PDS_INVALID_VALUE, "no newline at the end of statement");
             return 0;   
         }
         parser->status = PDS_END;
@@ -1618,7 +1622,7 @@ static int PDS_parse_statement(PDS_parser *parser) {
     }
     
     if('=' != *parser->current) {
-        PDS_error(parser, PDS_INVALID_VALUE, "missing or invalid statement delimiter");
+        PDS_error(parser, parser->current, PDS_INVALID_VALUE, "missing or invalid statement delimiter");
         return 0;
     }
     ++parser->current;
@@ -1650,7 +1654,7 @@ static int PDS_parse_statement(PDS_parser *parser) {
                     }
                 }
                 if(0 == PDS_parse_rhs(parser)) {
-                    PDS_error(parser, parser->status, "invalid right value");
+                    PDS_error(parser, parser->current, parser->status, "invalid right value");
                     return 0;
                 }
                 if(0 != end) {
@@ -1666,7 +1670,7 @@ static int PDS_parse_statement(PDS_parser *parser) {
                 int (*callback)(const char*, const char*, void*);   
                 parser->scalar.identifier.first = PDS_parse_identifier(parser->current, parser->last, &parser->current, &parser->status);
                 if(PDS_OK != parser->status) {
-                    PDS_error(parser, PDS_INVALID_VALUE, "invalid group identifier");
+                    PDS_error(parser, parser->current, PDS_INVALID_VALUE, "invalid group identifier");
                     return 0;
                 }
                 parser->scalar.identifier.last = parser->current-1;
@@ -1687,7 +1691,7 @@ static int PDS_parse_statement(PDS_parser *parser) {
             }
             break;
         default:
-            PDS_error(parser, PDS_INVALID_VALUE, "unknown token type");
+            PDS_error(parser, parser->current, PDS_INVALID_VALUE, "unknown token type");
             return 0;
     }
 
@@ -1698,7 +1702,7 @@ static int PDS_parse_statement(PDS_parser *parser) {
 
     /* Check for new line. */
     if(parser->line_num <= line) {
-        PDS_error(parser, PDS_INVALID_VALUE, "invalid input");
+        PDS_error(parser, parser->current, PDS_INVALID_VALUE, "invalid input");
         return 0;
     }
     return 1;
@@ -1752,18 +1756,18 @@ int PDS_parse(PDS_callbacks *callbacks, const char *buffer, int len, void *user_
     }
     if(!PDS_string_case_compare(parser.token.first, parser.token.last, pds_version_name_first, pds_version_name_last)) {
         PDS_rewind(&parser, &parser.token);
-        PDS_error(&parser, PDS_INVALID_VALUE, "a PDS file must start with PDS_VERSION_ID");
+        PDS_error(&parser, parser.current, PDS_INVALID_VALUE, "a PDS file must start with PDS_VERSION_ID");
         return 0;
     }
     /* Check version. */
     if(PDS_IDENTIFIER_VALUE != parser.scalar.type) {
         PDS_rewind(&parser, &parser.token);
-        PDS_error(&parser, PDS_INVALID_VALUE, "invalid value type for PDS_VERSION_ID");
+        PDS_error(&parser, parser.current, PDS_INVALID_VALUE, "invalid value type for PDS_VERSION_ID");
         return 0;
     }
     if(!PDS_string_case_compare(parser.scalar.identifier.first, parser.scalar.identifier.last, pds_version_id_first, pds_version_id_last)) {
         PDS_rewind(&parser, &parser.token);
-        PDS_error(&parser, PDS_INVALID_VALUE, "invalid PDS version id");
+        PDS_error(&parser, parser.current, PDS_INVALID_VALUE, "invalid PDS version id");
         return 0;
     }
     /* Parse the remaining. */  
