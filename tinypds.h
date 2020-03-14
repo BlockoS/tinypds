@@ -854,7 +854,7 @@ static int PDS_parse_unit(PDS_parser *parser) {
     parser->scalar.integer.unit.first = first;  
     while(first<parser->last) {
         /* unit factor */
-        for(; (first<parser->last) && (PDS_isalpha(*first) || ('_'==*first)); first++) {
+        for(; (first<parser->last) && (PDS_isalpha(*first) || ('_'==*first) || (' '==*first)); first++) { /* DAWN hack, units can be a literal string... */
         }
         /* Check for multiplier, exponent or divisor. */
         if(first < parser->last) {
