@@ -1704,6 +1704,25 @@ static int PDS_parse_statement(PDS_parser *parser) {
     return 1;
 }
 /*
+ * Rewind parser to the beginning of the line containing the token.
+ */
+static void PDS_rewind(PDS_parser *parser, PDS_token *token) {
+    for(; parser->current != token->first; parser->current--) {
+        char c = *parser->current;
+        if(c == '\n') {
+            parser->line_num--;
+        }
+    }
+    for(parser->line = parser->current; parser->line != parser->first; parser->line--) {
+        char c = *parser->line;
+        if(c == '\n') {
+            parser->line++;
+            break;
+        }
+    }
+}
+
+/*
  * Parse the PDS data contained in the input buffer.
  */
 int PDS_parse(PDS_callbacks *callbacks, const char *buffer, int len, void *user_data) {
@@ -1732,15 +1751,18 @@ int PDS_parse(PDS_callbacks *callbacks, const char *buffer, int len, void *user_
         return 0;
     }
     if(!PDS_string_case_compare(parser.token.first, parser.token.last, pds_version_name_first, pds_version_name_last)) {
+        PDS_rewind(&parser, &parser.token);
         PDS_error(&parser, PDS_INVALID_VALUE, "a PDS file must start with PDS_VERSION_ID");
         return 0;
     }
     /* Check version. */
     if(PDS_IDENTIFIER_VALUE != parser.scalar.type) {
+        PDS_rewind(&parser, &parser.token);
         PDS_error(&parser, PDS_INVALID_VALUE, "invalid value type for PDS_VERSION_ID");
         return 0;
     }
     if(!PDS_string_case_compare(parser.scalar.identifier.first, parser.scalar.identifier.last, pds_version_id_first, pds_version_id_last)) {
+        PDS_rewind(&parser, &parser.token);
         PDS_error(&parser, PDS_INVALID_VALUE, "invalid PDS version id");
         return 0;
     }
