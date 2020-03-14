@@ -607,7 +607,7 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **item, PDS_error_des
         return 0;
     }
     if( (NULL == buffer) || (0 == len) || (NULL == item) ) {
-        error->line = 0;
+        error->line_first =  error->line_last = 0;
         error->msg = "invalid parameters";
         return 0;
     }
@@ -637,11 +637,12 @@ int PDS_DOM_parse(const char *buffer, size_t len, PDS_item **item, PDS_error_des
     
     *item = NULL;
  
-    payload.error.line     = 0;
-    payload.error.number   = 0;
-    payload.error.position = 0;
-    payload.error.status   = PDS_OK;
-    payload.error.msg      = "ok";
+    payload.error.line_first = 0;
+    payload.error.line_last  = 0;
+    payload.error.number     = 0;
+    payload.error.position   = 0;
+    payload.error.status     = PDS_OK;
+    payload.error.msg        = "ok";
  
     /* Parse buffer */
     ret = PDS_parse(&callbacks, buffer, len, &payload);

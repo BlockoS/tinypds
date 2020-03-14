@@ -206,9 +206,8 @@ int image_sample_type(const PDS_scalar *scalar, PDS_payload *payload)
 void print_error(const PDS_error_description* desc, void *unused)
 {
     (void)unused;
-    const char *end = PDS_find_first(desc->line, desc->line+strlen(desc->line), '\n');
-    int count = end-desc->line;
-    fprintf(stderr, "error:%d:%d: %s\n%4d|%.*s    |%*s\n", desc->number, desc->position, desc->msg, desc->number, count+1, desc->line, desc->position, "^");
+    int count = desc->line_last - desc->line_first + 1;
+    fprintf(stderr, "error:%d:%d: %s\n%4d|%.*s    |%*s\n", desc->number, desc->position, desc->msg, desc->number, count, desc->line_first, desc->position, "^");
 }
 /**
  * Global attribute parser.

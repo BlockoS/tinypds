@@ -166,7 +166,9 @@ typedef int (*PDS_scalar_callback) (const PDS_scalar *scalar, void *user_data);
 /** Error description. **/
 typedef struct {
     /** Pointer to the beginning of the line being parsed. **/
-    const char *line;
+    const char *line_first;
+    /** Pointer to the last of the line being parsed. **/
+    const char *line_last;
     /** Line number. **/
     int number;
     /** Position of the erroneous character character. **/
@@ -427,11 +429,16 @@ static void PDS_error(PDS_parser *parser, int error, const char *message) {
     parser->status = error;
     if(0 != parser->callbacks.error) {
         PDS_error_description description;
-        description.line     = parser->line;
-        description.number   = parser->line_num;
-        description.position = parser->current - parser->line + 1;
-        description.status   = error;
-        description.msg      = message;
+        description.line_first = parser->line;
+        for(description.line_last = parser->line; description.line_last != parser->last; description.line_last++) {
+            if('\n' == *description.line_last) {
+                break;
+            }
+        }
+        description.number     = parser->line_num;
+        description.position   = parser->current - parser->line + 1;
+        description.status     = error;
+        description.msg        = message;
         parser->callbacks.error(&description, parser->user_data);
     }
 }
